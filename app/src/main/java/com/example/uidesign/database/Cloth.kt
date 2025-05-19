@@ -2,7 +2,6 @@ package com.example.uidesign.database
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
 
 @Entity(tableName = "clothes")
 data class Cloth(
