@@ -9,10 +9,10 @@ data class Cloth(
     val uid: String,                // Firebase UID of current user / cloth owner
     val name: String,              // clothing name
     val type: ClothType,           // type：CAP, TOP, BOTTOM, SHOES
-    val color: String,
-    val fabric: String,
+    val color: String?,
+    val fabric: String?,
     val lastWornDate: Long?,
-    val wearCount: Int,
+    val wearCount: Int = 0,
     val imagePath: String?,         // local path of target image
     val isDonated: Boolean = false
 )
