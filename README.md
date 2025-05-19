@@ -1,1 +1,1 @@
-EcoFit: Smart Weather-based Outfit Manager
+UI -- EcoFit: Smart Weather-based Outfit Manager
