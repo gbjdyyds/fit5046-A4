@@ -6,10 +6,15 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [Cloth::class], version = 1, exportSchema = false)
+@Database(
+    entities = [Cloth::class, WearHistory::class],
+    version = 1,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class ClothDatabase : RoomDatabase() {
     abstract fun clothDao(): ClothDao
+    abstract fun wearHistoryDao(): WearHistoryDao
 
     companion object {
         @Volatile private var INSTANCE: ClothDatabase? = null
