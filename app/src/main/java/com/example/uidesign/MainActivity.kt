@@ -39,18 +39,18 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-      
+
 
                     // 显示主页面
                     // HomeScreen()
-                    
+
                     // 如果要切换到其他页面，注释上面的 HomeScreen()，取消注释下面的页面
-                    // LoginScreen()
-                     RegisterScreen(onBackClick = {})
-                    // ProfileScreen()
+//                     LoginScreen()
+//                     RegisterScreen(onBackClick = {})
+//                     ProfileScreen()
                     // CalendarScreen()
                     // WardrobeScreen()
-                    // AddScreen()
+                     AddScreen()
                 }
             }
         }
@@ -76,7 +76,7 @@ fun RegistrationScreen() {
             .padding(horizontal = 24.dp)
     ) {
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Top Bar with back button and title
         Row(
             modifier = Modifier
@@ -117,14 +117,14 @@ fun RegistrationScreen() {
         OutlinedTextField(
             value = fullName,
             onValueChange = { fullName = it },
-            placeholder = { 
+            placeholder = {
                 Text(
                     "Enter your full name",
                     style = TextStyle(
                         color = Color.Gray,
                         fontSize = 16.sp
                     )
-                ) 
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -151,14 +151,14 @@ fun RegistrationScreen() {
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            placeholder = { 
+            placeholder = {
                 Text(
                     "Enter your email",
                     style = TextStyle(
                         color = Color.Gray,
                         fontSize = 16.sp
                     )
-                ) 
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -185,14 +185,14 @@ fun RegistrationScreen() {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            placeholder = { 
+            placeholder = {
                 Text(
                     "Create a password",
                     style = TextStyle(
                         color = Color.Gray,
                         fontSize = 16.sp
                     )
-                ) 
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -229,14 +229,14 @@ fun RegistrationScreen() {
         OutlinedTextField(
             value = confirmPassword,
             onValueChange = { confirmPassword = it },
-            placeholder = { 
+            placeholder = {
                 Text(
                     "Confirm your password",
                     style = TextStyle(
                         color = Color.Gray,
                         fontSize = 16.sp
                     )
-                ) 
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()

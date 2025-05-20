@@ -42,25 +42,28 @@ fun ClothDetailScreen(
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
     val redColor = Color(0xFFE53935)
-    
+
     val cloth by viewModel.cloth.collectAsState()
     val isDonationSuggested by viewModel.isDonationSuggested.collectAsState()
-    
+
     var showTypeDialog by remember { mutableStateOf(false) }
     var showColorDialog by remember { mutableStateOf(false) }
     var showFabricDialog by remember { mutableStateOf(false) }
-    
+
     val context = LocalContext.current
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let {
-            // 处理选择的图片
-            val imagePath = it.toString()
-            viewModel.updateImage(imagePath)
-        }
+        uri?.let { viewModel.updateImage(it.toString()) }
     }
-    
+
+    // 👇 解决关键：提前初始化输入状态（避免在 AlertDialog 中写 remember）
+    val initialColor = cloth?.color ?: ""
+    var colorInput by remember(cloth?.id) { mutableStateOf(initialColor) }
+
+    val initialFabric = cloth?.fabric ?: ""
+    var fabricInput by remember(cloth?.id) { mutableStateOf(initialFabric) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -77,75 +80,7 @@ fun ClothDetailScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = Color.White
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Home
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Home,
-                            contentDescription = "Home",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Home",
-                            style = TextStyle(fontSize = 12.sp, color = Color.Gray)
-                        )
-                    }
-                    
-                    // Wardrobe
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Checkroom,
-                            contentDescription = "Wardrobe",
-                            tint = greenColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Wardrobe",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = greenColor,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                    
-                    // Calendar
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = "Calendar",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Calendar",
-                            style = TextStyle(fontSize = 12.sp, color = Color.Gray)
-                        )
-                    }
-                    
-                    // Profile
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = "Profile",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Profile",
-                            style = TextStyle(fontSize = 12.sp, color = Color.Gray)
-                        )
-                    }
-                }
-            }
+            BottomNavigationBar(greenColor)
         }
     ) { paddingValues ->
         cloth?.let { currentCloth ->
@@ -157,7 +92,7 @@ fun ClothDetailScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // 衣服图片
+                // Image
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -170,8 +105,7 @@ fun ClothDetailScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
-                    
-                    // 捐赠提示
+
                     if (isDonationSuggested) {
                         Surface(
                             modifier = Modifier
@@ -184,12 +118,11 @@ fun ClothDetailScreen(
                                 text = "Donate",
                                 color = Color.White,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = TextStyle(fontSize = 12.sp)
+                                fontSize = 12.sp
                             )
                         }
                     }
-                    
-                    // 上传图片按钮
+
                     FloatingActionButton(
                         onClick = { imagePicker.launch("image/*") },
                         modifier = Modifier
@@ -200,20 +133,14 @@ fun ClothDetailScreen(
                         Icon(Icons.Default.Edit, "Change image")
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                // 衣服信息
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        // Name
+                    Column(modifier = Modifier.padding(16.dp)) {
                         OutlinedTextField(
                             value = currentCloth.name,
                             onValueChange = { viewModel.updateName(it) },
@@ -224,15 +151,13 @@ fun ClothDetailScreen(
                                 focusedLabelColor = greenColor
                             )
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Type and Color
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Type
                             OutlinedTextField(
                                 value = currentCloth.type.name,
                                 onValueChange = { },
@@ -249,10 +174,9 @@ fun ClothDetailScreen(
                                     focusedLabelColor = greenColor
                                 )
                             )
-                            
-                            // Color
+
                             OutlinedTextField(
-                                value = currentCloth.color,
+                                value = currentCloth.color ?: "",
                                 onValueChange = { },
                                 label = { Text("Color") },
                                 modifier = Modifier.weight(1f),
@@ -268,17 +192,15 @@ fun ClothDetailScreen(
                                 )
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Fabric and Wear Count
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Fabric
                             OutlinedTextField(
-                                value = currentCloth.fabric,
+                                value = currentCloth.fabric ?: "",
                                 onValueChange = { },
                                 label = { Text("Fabric") },
                                 modifier = Modifier.weight(1f),
@@ -291,10 +213,9 @@ fun ClothDetailScreen(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = greenColor,
                                     focusedLabelColor = greenColor
-                                ))
-                            }
-                            
-                            // Wear Count
+                                )
+                            )
+
                             OutlinedTextField(
                                 value = currentCloth.wearCount.toString(),
                                 onValueChange = { },
@@ -307,10 +228,9 @@ fun ClothDetailScreen(
                                 )
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
-                        // Last Worn Date
+
                         OutlinedTextField(
                             value = currentCloth.lastWornDate?.let {
                                 SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
@@ -328,98 +248,107 @@ fun ClothDetailScreen(
                 }
             }
         }
-    
-    // Type Selection Dialog
-    if (showTypeDialog) {
-        AlertDialog(
-            onDismissRequest = { showTypeDialog = false },
-            title = { Text("Select Type") },
-            text = {
-                Column {
-                    ClothType.values().forEach { type ->
-                        TextButton(
-                            onClick = {
-                                viewModel.updateType(type)
-                                showTypeDialog = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(type.name)
+
+        // Dialogs
+        if (showTypeDialog) {
+            AlertDialog(
+                onDismissRequest = { showTypeDialog = false },
+                title = { Text("Select Type") },
+                text = {
+                    Column {
+                        ClothType.values().forEach { type ->
+                            TextButton(
+                                onClick = {
+                                    viewModel.updateType(type)
+                                    showTypeDialog = false
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(type.name)
+                            }
                         }
                     }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showTypeDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showTypeDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-    
-    // Color Input Dialog
-    if (showColorDialog) {
-        var colorInput by remember { mutableStateOf(cloth?.color ?: "") }
-        
-        AlertDialog(
-            onDismissRequest = { showColorDialog = false },
-            title = { Text("Enter Color") },
-            text = {
-                OutlinedTextField(
-                    value = colorInput,
-                    onValueChange = { colorInput = it },
-                    label = { Text("Color") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
+            )
+        }
+
+        if (showColorDialog) {
+            AlertDialog(
+                onDismissRequest = { showColorDialog = false },
+                title = { Text("Enter Color") },
+                text = {
+                    OutlinedTextField(
+                        value = colorInput,
+                        onValueChange = { colorInput = it },
+                        label = { Text("Color") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
                         viewModel.updateColor(colorInput)
                         showColorDialog = false
+                    }) {
+                        Text("Save")
                     }
-                ) {
-                    Text("Save")
+                },
+                dismissButton = {
+                    TextButton(onClick = { showColorDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showColorDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-    
-    // Fabric Input Dialog
-    if (showFabricDialog) {
-        var fabricInput by remember { mutableStateOf(cloth?.fabric ?: "") }
-        
-        AlertDialog(
-            onDismissRequest = { showFabricDialog = false },
-            title = { Text("Enter Fabric") },
-            text = {
-                OutlinedTextField(
-                    value = fabricInput,
-                    onValueChange = { fabricInput = it },
-                    label = { Text("Fabric") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
+            )
+        }
+
+        if (showFabricDialog) {
+            AlertDialog(
+                onDismissRequest = { showFabricDialog = false },
+                title = { Text("Enter Fabric") },
+                text = {
+                    OutlinedTextField(
+                        value = fabricInput,
+                        onValueChange = { fabricInput = it },
+                        label = { Text("Fabric") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
                         viewModel.updateFabric(fabricInput)
                         showFabricDialog = false
+                    }) {
+                        Text("Save")
                     }
-                ) {
-                    Text("Save")
+                },
+                dismissButton = {
+                    TextButton(onClick = { showFabricDialog = false }) {
+                        Text("Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showFabricDialog = false }) {
-                    Text("Cancel")
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomNavigationBar(greenColor: Color) {
+    BottomAppBar(modifier = Modifier.height(64.dp), containerColor = Color.White) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            listOf("Home" to Icons.Outlined.Home, "Wardrobe" to Icons.Outlined.Checkroom, "Calendar" to Icons.Outlined.CalendarToday, "Profile" to Icons.Outlined.Person).forEachIndexed { index, (label, icon) ->
+                val isSelected = label == "Wardrobe"
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(icon, label, tint = if (isSelected) greenColor else Color.Gray, modifier = Modifier.size(24.dp))
+                    Text(label, fontSize = 12.sp, color = if (isSelected) greenColor else Color.Gray)
                 }
             }
-        )
+        }
     }
-} 
+}
