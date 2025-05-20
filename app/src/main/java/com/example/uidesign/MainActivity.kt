@@ -47,10 +47,10 @@ class MainActivity : ComponentActivity() {
                     // 如果要切换到其他页面，注释上面的 HomeScreen()，取消注释下面的页面
 //                     LoginScreen()
 //                     RegisterScreen(onBackClick = {})
-//                     ProfileScreen()
+                     ProfileScreen()
                     // CalendarScreen()
                     // WardrobeScreen()
-                     AddScreen()
+//                     AddScreen()
                 }
             }
         }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,9 +38,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun AddScreen() {
     val context = LocalContext.current
     val application = context.applicationContext as Application
-    val viewModel: AddClothViewModel = viewModel(
-        factory = AddClothViewModelFactory(application)
-    )
+    val viewModel: AddClothViewModel = viewModel(factory = AddClothViewModelFactory(application))
 
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
@@ -64,72 +63,94 @@ fun AddScreen() {
     ) { uri: Uri? -> imageUri = uri }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Add New Item", color = greenColor) }) },
+        topBar = {
+            TopAppBar(title = { Text("Add New Item", color = greenColor) })
+        },
         bottomBar = {
-            BottomAppBar(containerColor = Color.White) {
+            // ✅ Bottom Navigation 硬编码实现 —— 未来可以抽出为 BottomNavBar 组件
+            BottomAppBar(
+                modifier = Modifier.height(64.dp),
+                containerColor = Color.White
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            style = ""
-                            type = ""
-                            color = ""
-                            fabricWeight = ""
-                            imageUri = null
-                        },
-                        modifier = Modifier.padding(end = 12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = greenColor)
+                    // Home
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Cancel", fontSize = 16.sp)
-                    }
-                    Button(
-                        colors = ButtonDefaults.buttonColors(containerColor = greenColor),
-                        onClick = {
-                            val hasError = style.isBlank() || type.isBlank() || color.isBlank() || fabricWeight.isBlank()
-                            styleError = style.isBlank()
-                            typeError = type.isBlank()
-                            colorError = color.isBlank()
-                            fabricWeightError = fabricWeight.isBlank()
-
-                            if (hasError) {
-                                Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
-                            val uid = FirebaseAuth.getInstance().currentUser?.uid
-                            if (uid == null) {
-                                Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
-                            val typeEnum = try {
-                                ClothType.valueOf(type.uppercase())
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Invalid type", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
-                            viewModel.saveCloth(
-                                uid = uid,
-                                name = style,
-                                type = typeEnum,
-                                color = color,
-                                fabric = fabricWeight,
-                                imageUri = imageUri?.toString()
+                        Icon(
+                            imageVector = Icons.Outlined.Home,
+                            contentDescription = "Home",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Home",
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                color = Color.Gray
                             )
+                        )
+                    }
 
-                            Toast.makeText(context, "Item saved successfully", Toast.LENGTH_SHORT).show()
-
-                            style = ""
-                            type = ""
-                            color = ""
-                            fabricWeight = ""
-                            imageUri = null
-                        }
+                    // Wardrobe
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Save Item", fontSize = 16.sp)
+                        Icon(
+                            imageVector = Icons.Outlined.Checkroom,
+                            contentDescription = "Wardrobe",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Wardrobe",
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        )
+                    }
+
+                    // Calendar
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CalendarToday,
+                            contentDescription = "Calendar",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Calendar",
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        )
+                    }
+
+                    // Profile - Active
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = "Profile",
+                            tint = greenColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = "Profile",
+                            style = TextStyle(
+                                fontSize = 12.sp,
+                                color = greenColor,
+                                fontWeight = FontWeight.Medium
+                            )
+                        )
                     }
                 }
             }
@@ -151,10 +172,12 @@ fun AddScreen() {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
+                        Column {
                             Text("Item Photo *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                             Spacer(Modifier.height(8.dp))
                             Box(
@@ -177,7 +200,6 @@ fun AddScreen() {
                                 }
                             }
                         }
-
                         @Composable
                         fun inputField(label: String, value: String, onValueChange: (String) -> Unit, isError: Boolean, errorText: String) {
                             Column(modifier = Modifier.fillMaxWidth()) {
@@ -261,6 +283,74 @@ fun AddScreen() {
                             fabricWeight = it
                             fabricWeightError = it.isBlank()
                         }, fabricWeightError, "Fabric Weight is required")
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            style = ""
+                            type = ""
+                            color = ""
+                            fabricWeight = ""
+                            imageUri = null
+                        },
+                        modifier = Modifier.padding(end = 12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = greenColor)
+                    ) {
+                        Text("Cancel", fontSize = 16.sp)
+                    }
+                    Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = greenColor),
+                        onClick = {
+                            val hasError = style.isBlank() || type.isBlank() || color.isBlank() || fabricWeight.isBlank()
+                            styleError = style.isBlank()
+                            typeError = type.isBlank()
+                            colorError = color.isBlank()
+                            fabricWeightError = fabricWeight.isBlank()
+
+                            if (hasError) {
+                                Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            val uid = FirebaseAuth.getInstance().currentUser?.uid
+                            if (uid == null) {
+                                Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            val typeEnum = try {
+                                ClothType.valueOf(type.uppercase())
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Invalid type", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            viewModel.saveCloth(
+                                uid = uid,
+                                name = style,
+                                type = typeEnum,
+                                color = color,
+                                fabric = fabricWeight,
+                                imageUri = imageUri?.toString()
+                            )
+
+                            Toast.makeText(context, "Item saved successfully", Toast.LENGTH_SHORT).show()
+
+                            style = ""
+                            type = ""
+                            color = ""
+                            fabricWeight = ""
+                            imageUri = null
+                        }
+                    ) {
+                        Text("Save Item", fontSize = 16.sp)
                     }
                 }
             }
