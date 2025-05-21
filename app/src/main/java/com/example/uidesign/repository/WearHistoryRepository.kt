@@ -10,21 +10,28 @@ import kotlinx.coroutines.flow.Flow
 class WearHistoryRepository(application: Application) {
     private val wearHistoryDao = ClothDatabase.getDatabase(application).wearHistoryDao()
 
-    suspend fun insertWearHistory(wearHistory: WearHistory) =
+    suspend fun insertWearHistory(wearHistory: WearHistory) {
         wearHistoryDao.insertWearHistory(wearHistory)
+    }
 
     suspend fun getMonthlyRepeatReusageTrend(
         uid: String,
         start: Long,
         end: Long,
         limit: Int = 6
-    ): List<MonthlyRepeatReusage> =
-        wearHistoryDao.getMonthlyRepeatReusageTrend(uid, start, end, limit)
+    ): List<MonthlyRepeatReusage> {
+        return wearHistoryDao.getMonthlyRepeatReusageTrend(uid, start, end, limit)
+    }
 
-    suspend fun getRepeatWearCountInDays(uid: String, startTime: Long): Int =
-        wearHistoryDao.getRepeatWearCountInDays(uid, startTime)
+    suspend fun getRepeatWearCountInDays(uid: String, startTime: Long): Int {
+        return wearHistoryDao.getRepeatWearCountInDays(uid, startTime)
+    }
 
-    suspend fun getMaxRepeatWearCount(uid: String): Int? =
-        wearHistoryDao.getMaxRepeatWearCount(uid)
+    suspend fun getMaxRepeatWearCount(uid: String): Int? {
+        return wearHistoryDao.getMaxRepeatWearCount(uid)
+    }
 
+    suspend fun getAllAvailableMonths(uid: String): List<String> {
+        return wearHistoryDao.getAllAvailableMonths(uid)
+    }
 }

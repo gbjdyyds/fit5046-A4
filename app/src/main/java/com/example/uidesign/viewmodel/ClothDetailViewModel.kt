@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.uidesign.database.Cloth
 import com.example.uidesign.database.ClothType
 import com.example.uidesign.repository.ClothRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,7 @@ import java.util.*
 
 class ClothDetailViewModel(application: Application, private val clothId: Int) : AndroidViewModel(application) {
     private val repository: ClothRepository = ClothRepository(application)
+    private val currentUserUid: String? = FirebaseAuth.getInstance().currentUser?.uid
     
     private val _cloth = MutableStateFlow<Cloth?>(null)
     val cloth: StateFlow<Cloth?> = _cloth
@@ -28,8 +30,10 @@ class ClothDetailViewModel(application: Application, private val clothId: Int) :
     private fun loadCloth() {
         viewModelScope.launch(Dispatchers.IO) {
             val cloth = repository.getClothById(clothId)
-            _cloth.value = cloth
-            checkDonationSuggestion(cloth)
+            if (cloth?.uid == currentUserUid) {
+                _cloth.value = cloth
+                checkDonationSuggestion(cloth)
+            }
         }
     }
     
@@ -45,36 +49,46 @@ class ClothDetailViewModel(application: Application, private val clothId: Int) :
     
     fun updateName(name: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.updateClothName(clothId, name)
-            _cloth.value = _cloth.value?.copy(name = name)
+            if (_cloth.value?.uid == currentUserUid) {
+                repository.updateClothName(clothId, name)
+                _cloth.value = _cloth.value?.copy(name = name)
+            }
         }
     }
     
     fun updateType(type: ClothType) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.updateClothType(clothId, type)
-            _cloth.value = _cloth.value?.copy(type = type)
+            if (_cloth.value?.uid == currentUserUid) {
+                repository.updateClothType(clothId, type)
+                _cloth.value = _cloth.value?.copy(type = type)
+            }
         }
     }
     
     fun updateColor(color: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.updateClothColor(clothId, color)
-            _cloth.value = _cloth.value?.copy(color = color)
+            if (_cloth.value?.uid == currentUserUid) {
+                repository.updateClothColor(clothId, color)
+                _cloth.value = _cloth.value?.copy(color = color)
+            }
         }
     }
     
     fun updateFabric(fabric: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.updateClothFabric(clothId, fabric)
-            _cloth.value = _cloth.value?.copy(fabric = fabric)
+            if (_cloth.value?.uid == currentUserUid) {
+                repository.updateClothFabric(clothId, fabric)
+                _cloth.value = _cloth.value?.copy(fabric = fabric)
+            }
         }
     }
     
     fun updateImage(imagePath: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.updateClothImage(clothId, imagePath)
-            _cloth.value = _cloth.value?.copy(imagePath = imagePath)
+            if (_cloth.value?.uid == currentUserUid) {
+                repository.updateClothImage(clothId, imagePath)
+                _cloth.value = _cloth.value?.copy(imagePath = imagePath)
+            }
         }
     }
 } 

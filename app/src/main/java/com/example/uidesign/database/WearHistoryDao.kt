@@ -5,10 +5,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WearHistoryDao {
+    
+    // add new wearing history into table
     @Insert
     suspend fun insertWearHistory(wearHistory: WearHistory)
-
-    // 查询某用户某月所有衣服的重复穿搭总次数
+    
+    // Calculate the repeated usage behaviour on monthly basis, while user is able to
+    // select the start and end month
     @Query("""
         SELECT 
           strftime('%Y-%m', datetime(timestamp/1000, 'unixepoch')) as month,
@@ -26,7 +29,8 @@ interface WearHistoryDao {
         limit: Int = 6
     ): List<MonthlyRepeatReusage>
 
-    // 查询过去N天内的重复穿搭次数
+    // Accept user id and a timestamp, calculate the repeat wearing behavior from
+    // the selected time to now
     @Query("""
         SELECT 
           (COUNT(*) - COUNT(DISTINCT clothId)) as repeat_count
@@ -35,6 +39,7 @@ interface WearHistoryDao {
     """)
     suspend fun getRepeatWearCountInDays(uid: String, startTime: Long): Int
 
+    // get the max repeat wearing count of a single outfit
     @Query("""
         SELECT 
             MAX(wear_count) - 1 AS max_repeat_count
@@ -48,10 +53,18 @@ interface WearHistoryDao {
     """)
     suspend fun getMaxRepeatWearCount(uid: String): Int?
     
+    // Get all available months from wear history for a specific user
+    @Query("""
+        SELECT DISTINCT strftime('%Y-%m', datetime(timestamp/1000, 'unixepoch')) as month
+        FROM wear_history
+        WHERE uid = :uid
+        ORDER BY month DESC
+    """)
+    suspend fun getAllAvailableMonths(uid: String): List<String>
 }
 
-// 用于折线图的数据类
-data class MonthlyReusage(
-    val month: String, // e.g.,"2024-05"
-    val count: Int
+// data class to enable monthly usage data count for line chart
+data class MonthlyRepeatReusage(
+    val month: String,
+    val repeat_count: Int
 )

@@ -8,15 +8,15 @@ interface ClothDao {
     @Query("SELECT * FROM clothes")
     fun getAllClothes(): Flow<List<Cloth>>
 
-    @Query("SELECT * FROM clothes WHERE type = :type")
-    fun getClothesByType(type: String): Flow<List<Cloth>>
-
     @Query("SELECT * FROM clothes WHERE id = :id")
     suspend fun getClothById(id: Int): Cloth?
 
     @Query("SELECT * FROM clothes WHERE uid = :uid")
     fun getClothesByUser(uid: String): Flow<List<Cloth>>
 
+    @Query("SELECT * FROM clothes WHERE uid = :uid AND type = :type")
+    fun getClothesByUserAndType(uid: String, type: String): Flow<List<Cloth>>
+    
     @Query("SELECT * FROM clothes WHERE uid = :uid AND (lastWornDate < (strftime('%s', 'now') * 1000 - 365 * 24 * 60 * 60 * 1000) OR lastWornDate IS NULL)")
     fun getClothesNotWornForOneYear(uid: String): Flow<List<Cloth>>
 
