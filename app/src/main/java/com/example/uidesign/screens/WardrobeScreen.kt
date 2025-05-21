@@ -2,6 +2,7 @@ package com.example.uidesign.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,54 +19,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.uidesign.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import com.example.uidesign.database.Cloth
+import com.example.uidesign.viewmodel.WardrobeViewModel
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.uidesign.database.ClothType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WardrobeScreen() {
+fun WardrobeScreen(
+    onNavigateToAddCloth: () -> Unit,
+    onNavigateToClothDetail: (Int) -> Unit,
+    viewModel: WardrobeViewModel = viewModel()
+) {
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
     val redColor = Color(0xFFE53935)
+    val context = LocalContext.current
     
-    // 准备衣橱数据
-    val wardrobeItems = listOf(
-        WardrobeItem(
-            name = "Navy Blazer",
-            imageRes = R.drawable.outfit_suit,
-            wornTimes = 12,
-            lastWorn = "2 weeks ago",
-            isDonationSuggested = false
-        ),
-        WardrobeItem(
-            name = "Black Pants",
-            imageRes = R.drawable.outfit_history_3,
-            wornTimes = 30,
-            lastWorn = "1 year ago",
-            isDonationSuggested = true
-        ),
-        WardrobeItem(
-            name = "Floral Dress",
-            imageRes = R.drawable.outfit_dress,
-            wornTimes = 5,
-            lastWorn = "3 months ago",
-            isDonationSuggested = false
-        ),
-        WardrobeItem(
-            name = "Blue Sweater",
-            imageRes = R.drawable.blue_sweater,
-            wornTimes = 3,
-            lastWorn = "2 years ago",
-            isDonationSuggested = true
-        )
-    )
+    // 获取当前用户ID（这里需要替换为实际的用户认证逻辑）
+    val currentUserId = "current_user_id"
+    
+    // 获取用户衣物列表
+    val userClothes by viewModel.getCurrentUserClothes(currentUserId).collectAsState(initial = emptyList())
+    
+    // 获取需要捐赠提醒的衣物
+    val donationReminderClothes by viewModel.getDonationReminderClothes(currentUserId).collectAsState(initial = emptyList())
+    
+    // 搜索状态
+    var searchQuery by remember { mutableStateOf("") }
+    
+    // 过滤后的衣物列表
+    val filteredClothes = userClothes.filter {
+        searchQuery.isEmpty() || it.name.contains(searchQuery, ignoreCase = true)
+    }
     
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToAddCloth,
+                containerColor = greenColor
+            ) {
+                Icon(Icons.Default.Add, "Add new clothing")
+            }
+        },
         bottomBar = {
             BottomAppBar(
                 modifier = Modifier.height(64.dp),
@@ -162,7 +168,6 @@ fun WardrobeScreen() {
                 .background(lightGreenBg)
                 .padding(horizontal = 16.dp)
         ) {
-            // 标题 - 进一步增加顶部间距，使整体下移
             Spacer(modifier = Modifier.height(45.dp))
             Text(
                 text = "My Wardrobe",
@@ -174,184 +179,158 @@ fun WardrobeScreen() {
                 modifier = Modifier.padding(vertical = 12.dp)
             )
             
-            // 搜索栏和添加按钮
-            Row(
+            // 搜索栏
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search items...") },
+                leadingIcon = { 
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = Color.Gray
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(56.dp)
                     .padding(bottom = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 搜索框
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = { },
-                    placeholder = { Text("Search items...") },
-                    leadingIcon = { 
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = Color.Gray
-                        )
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White,
-                        unfocusedBorderColor = Color.LightGray,
-                        focusedBorderColor = greenColor
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    singleLine = true
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
                 )
-                
-                Spacer(modifier = Modifier.width(12.dp))
-                
-                // 添加按钮
-                Button(
-                    onClick = { /* TODO: Handle add item */ },
-                    modifier = Modifier.height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = greenColor
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add item",
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Add Item",
-                        color = Color.White
-                    )
-                }
-            }
+            )
             
-            // 衣橱网格 - 调整使其接近底部导航栏
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f) // 使用weight让内容能够均匀分布
+            // Display cloth card using lazy column
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp),
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 8.dp) // 减少底部内边距
-                ) {
-                    items(wardrobeItems) { item ->
-                        WardrobeItemCard(item = item, redColor = redColor)
-                    }
+                items(filteredClothes) { cloth ->
+                    ClothCard(
+                        cloth = cloth,
+                        isDonationSuggested = cloth in donationReminderClothes,
+                        onClick = { onNavigateToClothDetail(cloth.id) }
+                    )
                 }
             }
-            // 添加一个很小的底部间距，让内容与底部导航栏更接近
-            Spacer(modifier = Modifier.height(4.dp))
         }
     }
 }
 
 @Composable
-fun WardrobeItemCard(item: WardrobeItem, redColor: Color) {
+fun ClothCard(
+    cloth: Cloth,
+    isDonationSuggested: Boolean,
+    onClick: () -> Unit
+) {
     val greenColor = Color(0xFF2E7D32)
+    val redColor = Color(0xFFE53935)
     
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            // 衣物图片 - 调整位置让图片更居中
+            // cloth image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
-                contentAlignment = Alignment.Center
+                    .height(160.dp)
             ) {
                 Image(
-                    painter = painterResource(id = item.imageRes),
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)  // 图片宽度略小于容器
-                        .fillMaxHeight(0.95f) // 图片高度略小于容器
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                        .padding(top = 8.dp), // 向下移动一点，减少顶部空白
-                    contentScale = ContentScale.Fit
+                    painter = rememberAsyncImagePainter(cloth.imagePath),
+                    contentDescription = cloth.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
                 
-                // 如果需要捐赠，显示礼物图标
-                if (item.isDonationSuggested) {
-                    Box(
+                // donation tag
+                if (isDonationSuggested) {
+                    Surface(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.White.copy(alpha = 0.9f)),
-                        contentAlignment = Alignment.Center
+                            .padding(8.dp),
+                        color = redColor,
+                        shape = RoundedCornerShape(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CardGiftcard,
-                            contentDescription = "Donation suggested",
-                            tint = redColor,
-                            modifier = Modifier.size(18.dp)
+                        Text(
+                            text = "Donate",
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = TextStyle(fontSize = 12.sp)
                         )
                     }
                 }
             }
             
-            // 衣物信息
+            // cloth detail
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp)
             ) {
                 Text(
-                    text = item.name,
+                    text = cloth.name,
                     style = TextStyle(
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = greenColor
+                        fontWeight = FontWeight.Medium
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 
-                Text(
-                    text = "Worn ${item.wornTimes} times",
-                    style = TextStyle(
-                        fontSize = 14.sp,
-                        color = Color.Gray
+                // wear count
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Repeat,
+                        contentDescription = "Wear count",
+                        tint = greenColor,
+                        modifier = Modifier.size(16.dp)
                     )
-                )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "worn ${cloth.wearCount} times",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    )
+                }
                 
-                Text(
-                    text = "Last worn: ${item.lastWorn}",
-                    style = TextStyle(
-                        fontSize = 14.sp,
-                        color = if (item.isDonationSuggested) redColor else Color.Gray
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // last worn date
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.DateRange,
+                        contentDescription = "Last worn",
+                        tint = greenColor,
+                        modifier = Modifier.size(16.dp)
                     )
-                )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = cloth.lastWornDate?.let {
+                            SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
+                        } ?: "Never worn",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    )
+                }
             }
         }
     }
-}
-
-data class WardrobeItem(
-    val name: String,
-    val imageRes: Int,
-    val wornTimes: Int,
-    val lastWorn: String,
-    val isDonationSuggested: Boolean
-) 
+} 

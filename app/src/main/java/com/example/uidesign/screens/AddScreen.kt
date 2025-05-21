@@ -1,9 +1,16 @@
 package com.example.uidesign.screens
 
+import android.app.Application
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,53 +21,53 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.uidesign.database.ClothType
+import com.example.uidesign.viewmodel.AddClothViewModel
+import com.example.uidesign.viewmodel.AddClothViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddScreen() {
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val viewModel: AddClothViewModel = viewModel(factory = AddClothViewModelFactory(application))
+
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
     val lightGray = Color(0xFFE0E0E0)
     val darkGray = Color(0xFF757575)
-    val requiredColor = Color(0xFFE53935)
-    
+
+    var style by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
+    var color by remember { mutableStateOf("") }
+    var fabricWeight by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var typeExpanded by remember { mutableStateOf(false) }
+    val typeOptions = listOf("CAP", "TOP", "BOTTOM", "SHOES")
+
+    var styleError by remember { mutableStateOf(false) }
+    var typeError by remember { mutableStateOf(false) }
+    var colorError by remember { mutableStateOf(false) }
+    var fabricWeightError by remember { mutableStateOf(false) }
+
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? -> imageUri = uri }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = "Add New Item",
-                        style = TextStyle(
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = greenColor
-                        )
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { /* 返回上一页 */ }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = greenColor
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = lightGreenBg,
-                    titleContentColor = greenColor
-                )
-            )
+            TopAppBar(title = { Text("Add New Item", color = greenColor) })
         },
-        
         bottomBar = {
+            // ✅ Bottom Navigation 硬编码实现 —— 未来可以抽出为 BottomNavBar 组件
             BottomAppBar(
                 modifier = Modifier.height(64.dp),
                 containerColor = Color.White
@@ -87,27 +94,26 @@ fun AddScreen() {
                             )
                         )
                     }
-                    
-                    // Wardrobe - Active
+
+                    // Wardrobe
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Checkroom,
                             contentDescription = "Wardrobe",
-                            tint = greenColor,
+                            tint = Color.Gray,
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
                             text = "Wardrobe",
                             style = TextStyle(
                                 fontSize = 12.sp,
-                                color = greenColor,
-                                fontWeight = FontWeight.Medium
+                                color = Color.Gray
                             )
                         )
                     }
-                    
+
                     // Calendar
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -126,22 +132,23 @@ fun AddScreen() {
                             )
                         )
                     }
-                    
-                    // Profile
+
+                    // Profile - Active
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Person,
                             contentDescription = "Profile",
-                            tint = Color.Gray,
+                            tint = greenColor,
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
                             text = "Profile",
                             style = TextStyle(
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = greenColor,
+                                fontWeight = FontWeight.Medium
                             )
                         )
                     }
@@ -149,332 +156,204 @@ fun AddScreen() {
             }
         }
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(lightGreenBg)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp)
         ) {
-            // 表单区域
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    // 图片上传区
                     Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // 标题带有星号
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Item Photo",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = greenColor,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            Text(
-                                text = " *",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = requiredColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 上传框
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(150.dp)
-                                .border(
-                                    BorderStroke(1.dp, lightGray),
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Upload",
-                                    tint = greenColor,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                Text(
-                                    text = "Click to upload or drag and drop",
-                                    style = TextStyle(
-                                        fontSize = 14.sp,
-                                        color = darkGray
-                                    )
-                                )
-                                
-                                Spacer(modifier = Modifier.height(4.dp))
-                                
-                                Text(
-                                    text = "PNG, JPG up to 10MB",
-                                    style = TextStyle(
-                                        fontSize = 12.sp,
-                                        color = darkGray
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Style 输入框
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // 标题带有星号
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Style",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = greenColor,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            Text(
-                                text = " *",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = requiredColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 输入框
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = { },
-                            placeholder = { Text("Add custom style") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = lightGray,
-                                focusedBorderColor = greenColor
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true
-                        )
-                    }
-                    
-                    // Type 输入框 (带下拉箭头)
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // 标题带有星号
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Type",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = greenColor,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            Text(
-                                text = " *",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = requiredColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 带下拉箭头的输入框
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = { },
-                            placeholder = { Text("Add custom type") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = lightGray,
-                                focusedBorderColor = greenColor
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true,
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Dropdown",
-                                    tint = darkGray
-                                )
-                            }
-                        )
-                    }
-                    
-                    // Color 输入框
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // 标题带有星号
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Color",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = greenColor,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            Text(
-                                text = " *",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = requiredColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 输入框
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = { },
-                            placeholder = { Text("Add custom color") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = lightGray,
-                                focusedBorderColor = greenColor
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true
-                        )
-                    }
-                    
-                    // Fabric Weight 输入框
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        // 标题带有星号
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Fabric Weight",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = greenColor,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                            Text(
-                                text = " *",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = requiredColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            )
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        // 输入框
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = { },
-                            placeholder = { Text("Add fabric weight") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color.White,
-                                focusedContainerColor = Color.White,
-                                unfocusedBorderColor = lightGray,
-                                focusedBorderColor = greenColor
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true
-                        )
-                    }
-                    
-                    // 按钮区域
-                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.End
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        // 取消按钮
-                        OutlinedButton(
-                            onClick = { /* 取消操作 */ },
-                            modifier = Modifier.padding(end = 12.dp),
-                            border = BorderStroke(1.dp, lightGray),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = darkGray
-                            )
-                        ) {
-                            Text(
-                                text = "Cancel",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
+                        Column {
+                            Text("Item Photo *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp)
+                                    .border(BorderStroke(1.dp, lightGray), RoundedCornerShape(8.dp))
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { imageLauncher.launch("image/*") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (imageUri != null) {
+                                    AsyncImage(model = imageUri, contentDescription = null, modifier = Modifier.fillMaxSize())
+                                } else {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(Icons.Default.Add, contentDescription = null, tint = greenColor)
+                                        Text("Click to upload", color = darkGray, fontSize = 14.sp)
+                                        Text("PNG, JPG up to 10MB", color = darkGray, fontSize = 12.sp)
+                                    }
+                                }
+                            }
                         }
-                        
-                        // 保存按钮
-                        Button(
-                            onClick = { /* 保存操作 */ },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = greenColor
-                            )
-                        ) {
-                            Text(
-                                text = "Save Item",
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
+                        @Composable
+                        fun inputField(label: String, value: String, onValueChange: (String) -> Unit, isError: Boolean, errorText: String) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text("$label *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = value,
+                                    onValueChange = onValueChange,
+                                    isError = isError,
+                                    placeholder = { Text("Add $label") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedContainerColor = Color.White,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedBorderColor = lightGray,
+                                        focusedBorderColor = greenColor
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true
                                 )
-                            )
+                                if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
+                            }
                         }
+
+                        inputField("Style", style, {
+                            style = it
+                            styleError = it.isBlank()
+                        }, styleError, "Style is required")
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text("Type *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(8.dp))
+                            ExposedDropdownMenuBox(
+                                expanded = typeExpanded,
+                                onExpandedChange = { typeExpanded = !typeExpanded }
+                            ) {
+                                OutlinedTextField(
+                                    value = type,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    isError = typeError,
+                                    placeholder = { Text("Select type") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedContainerColor = Color.White,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedBorderColor = lightGray,
+                                        focusedBorderColor = greenColor
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = typeExpanded,
+                                    onDismissRequest = { typeExpanded = false }
+                                ) {
+                                    typeOptions.forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option) },
+                                            onClick = {
+                                                type = option
+                                                typeExpanded = false
+                                                typeError = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            if (typeError) Text("Type is required", color = Color.Red, fontSize = 12.sp)
+                        }
+
+                        inputField("Color", color, {
+                            color = it
+                            colorError = it.isBlank()
+                        }, colorError, "Color is required")
+
+                        inputField("Fabric Weight", fabricWeight, {
+                            fabricWeight = it
+                            fabricWeightError = it.isBlank()
+                        }, fabricWeightError, "Fabric Weight is required")
+                    }
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            style = ""
+                            type = ""
+                            color = ""
+                            fabricWeight = ""
+                            imageUri = null
+                        },
+                        modifier = Modifier.padding(end = 12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = greenColor)
+                    ) {
+                        Text("Cancel", fontSize = 16.sp)
+                    }
+                    Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = greenColor),
+                        onClick = {
+                            val hasError = style.isBlank() || type.isBlank() || color.isBlank() || fabricWeight.isBlank()
+                            styleError = style.isBlank()
+                            typeError = type.isBlank()
+                            colorError = color.isBlank()
+                            fabricWeightError = fabricWeight.isBlank()
+
+                            if (hasError) {
+                                Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            val uid = FirebaseAuth.getInstance().currentUser?.uid
+                            if (uid == null) {
+                                Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            val typeEnum = try {
+                                ClothType.valueOf(type.uppercase())
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Invalid type", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+
+                            viewModel.saveCloth(
+                                uid = uid,
+                                name = style,
+                                type = typeEnum,
+                                color = color,
+                                fabric = fabricWeight,
+                                imageUri = imageUri?.toString()
+                            )
+
+                            Toast.makeText(context, "Item saved successfully", Toast.LENGTH_SHORT).show()
+
+                            style = ""
+                            type = ""
+                            color = ""
+                            fabricWeight = ""
+                            imageUri = null
+                        }
+                    ) {
+                        Text("Save Item", fontSize = 16.sp)
                     }
                 }
             }
         }
     }
-} 
+}
