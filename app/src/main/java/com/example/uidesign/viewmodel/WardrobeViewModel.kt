@@ -19,10 +19,8 @@ class WardrobeViewModel(application: Application) : AndroidViewModel(application
     }
     
     // Get current user's clothes
-    fun getCurrentUserClothes(): Flow<List<Cloth>>? {
-        return currentUserUid?.let { uid ->
-            repository.getClothesByUser(uid)
-        }
+    fun getCurrentUserClothes(uid: String): Flow<List<Cloth>> {
+        return repository.getClothesByUser(uid)
     }
     
     fun insertCloth(cloth: Cloth) = viewModelScope.launch(Dispatchers.IO) {
@@ -40,9 +38,7 @@ class WardrobeViewModel(application: Application) : AndroidViewModel(application
     }
     
     // Get clothes that haven't been worn for a year and needs donation reminder
-    fun getDonationReminderClothes(): Flow<List<Cloth>>? {
-        return currentUserUid?.let { uid ->
-            repository.getClothesNotWornForOneYear(uid)
-        }
+    fun getDonationReminderClothes(uid: String): Flow<List<Cloth>> {
+        return repository.getClothesNotWornForOneYear(uid)
     }
 } 

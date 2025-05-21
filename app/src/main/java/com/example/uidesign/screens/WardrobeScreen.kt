@@ -61,10 +61,10 @@ fun WardrobeScreen(
 
     // 获取用户衣物列表
     val userClothes by viewModel.getCurrentUserClothes(currentUserId).collectAsState(initial = emptyList())
-    
+
     // 获取需要捐赠提醒的衣物
     val donationReminderClothes by viewModel.getDonationReminderClothes(currentUserId).collectAsState(initial = emptyList())
-    
+
     // 搜索状态
     var searchQuery by remember { mutableStateOf("") }
     
