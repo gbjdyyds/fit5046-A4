@@ -25,17 +25,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.uidesign.navigation.BottomNavBar
 import com.example.uidesign.database.MonthlyRepeatReusage
 import com.example.uidesign.viewmodel.ProfileViewModel
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavController) {
     val viewModel: ProfileViewModel = viewModel()
     val context = LocalContext.current
 
@@ -60,25 +63,12 @@ fun ProfileScreen() {
     }
 
     Scaffold(
-        bottomBar = {
-            BottomAppBar(modifier = Modifier.height(64.dp), containerColor = Color.White) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    val tabs = listOf("Home" to Icons.Outlined.Home, "Wardrobe" to Icons.Outlined.Checkroom,
-                        "Calendar" to Icons.Outlined.CalendarToday, "Profile" to Icons.Outlined.Person)
-                    tabs.forEach { (label, icon) ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(imageVector = icon, contentDescription = label, tint = if (label == "Profile") greenColor else Color.Gray, modifier = Modifier.size(24.dp))
-                            Text(text = label, fontSize = 12.sp, color = if (label == "Profile") greenColor else Color.Gray)
-                        }
-                    }
-                }
-            }
-        }
+        bottomBar = { BottomNavBar(navController, selected = "profile") }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(paddingValues).background(lightGray.copy(alpha = 0.3f))
         ) {
-            item { ProfileHeader(name, email, createdAt) }
+            item { ProfileHeader(name, email, createdAt, navController) }
             item {
                 Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                     StatCard(totalClothes.toString(), "Items", lightGreenBg)
@@ -109,7 +99,7 @@ fun ProfileScreen() {
 }
 
 @Composable
-fun ProfileHeader(name: String, email: String, createdAt: String) {
+fun ProfileHeader(name: String, email: String, createdAt: String, navController: NavController) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -120,7 +110,7 @@ fun ProfileHeader(name: String, email: String, createdAt: String) {
                 Text(text = email, fontSize = 14.sp, color = Color.Gray)
                 Text(text = "Member since $createdAt", fontSize = 14.sp, color = Color.Gray)
             }
-            IconButton(onClick = { /* TODO: navigate to editProfile */ }) {
+            IconButton(onClick = { navController.navigate("editProfile") }) {
                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray)
             }
         }
@@ -220,6 +210,7 @@ fun AchievementRow(icon: ImageVector, title: String, subtitle: String, achieved:
     }
 }
 
+
 @Composable
 fun DateRangeDropdowns(viewModel: ProfileViewModel) {
     val yearMonthOptions = viewModel.generateYearMonthOptions(viewModel.createdAt.value)
@@ -227,6 +218,8 @@ fun DateRangeDropdowns(viewModel: ProfileViewModel) {
     var expandedEnd by remember { mutableStateOf(false) }
     var selectedStartOption by remember { mutableStateOf(yearMonthOptions.firstOrNull() ?: "") }
     var selectedEndOption by remember { mutableStateOf(yearMonthOptions.lastOrNull() ?: "") }
+
+    val formatter = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
 
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text("Select Time Range", fontWeight = FontWeight.Medium)
@@ -249,7 +242,11 @@ fun DateRangeDropdowns(viewModel: ProfileViewModel) {
                             onClick = {
                                 selectedStartOption = option
                                 expandedStart = false
-                                // TODO: Convert option to timestamp and call viewModel.updateSelectedTimeRange()
+                                val ymStart = YearMonth.parse(option, formatter)
+                                val startMillis = ymStart.atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                                val ymEnd = YearMonth.parse(selectedEndOption, formatter)
+                                val endMillis = ymEnd.atEndOfMonth().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                                viewModel.updateSelectedTimeRange(startMillis, endMillis)
                             }
                         )
                     }
@@ -272,7 +269,11 @@ fun DateRangeDropdowns(viewModel: ProfileViewModel) {
                             onClick = {
                                 selectedEndOption = option
                                 expandedEnd = false
-                                // TODO: Convert option to timestamp and call viewModel.updateSelectedTimeRange()
+                                val ymStart = YearMonth.parse(selectedStartOption, formatter)
+                                val startMillis = ymStart.atDay(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                                val ymEnd = YearMonth.parse(option, formatter)
+                                val endMillis = ymEnd.atEndOfMonth().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                                viewModel.updateSelectedTimeRange(startMillis, endMillis)
                             }
                         )
                     }

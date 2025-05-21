@@ -32,11 +32,15 @@ import com.example.uidesign.viewmodel.WardrobeViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavController
 import com.example.uidesign.database.ClothType
+import com.example.uidesign.navigation.BottomNavBar
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WardrobeScreen(
+    navController: NavController,
     onNavigateToAddCloth: () -> Unit,
     onNavigateToClothDetail: (Int) -> Unit,
     viewModel: WardrobeViewModel = viewModel()
@@ -47,8 +51,14 @@ fun WardrobeScreen(
     val context = LocalContext.current
     
     // 获取当前用户ID（这里需要替换为实际的用户认证逻辑）
-    val currentUserId = "current_user_id"
-    
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+    if (currentUserId == null) {
+        Text("User not logged in", modifier = Modifier.padding(16.dp))
+        return
+    }
+
+
     // 获取用户衣物列表
     val userClothes by viewModel.getCurrentUserClothes(currentUserId).collectAsState(initial = emptyList())
     
@@ -72,94 +82,7 @@ fun WardrobeScreen(
                 Icon(Icons.Default.Add, "Add new clothing")
             }
         },
-        bottomBar = {
-            BottomAppBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = Color.White
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Home
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Home,
-                            contentDescription = "Home",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Home",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                    
-                    // Wardrobe - Active
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Checkroom,
-                            contentDescription = "Wardrobe",
-                            tint = greenColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Wardrobe",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = greenColor,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                    
-                    // Calendar
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = "Calendar",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Calendar",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                    
-                    // Profile
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = "Profile",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Profile",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        bottomBar = { BottomNavBar(navController, selected = "wardrobe") }
     ) { paddingValues ->
         Column(
             modifier = Modifier

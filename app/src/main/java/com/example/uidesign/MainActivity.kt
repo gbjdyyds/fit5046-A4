@@ -20,14 +20,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.uidesign.screens.HomeScreen
-import com.example.uidesign.screens.LoginScreen
-import com.example.uidesign.screens.RegisterScreen
-import com.example.uidesign.screens.ProfileScreen
-import com.example.uidesign.screens.CalendarScreen
-import com.example.uidesign.screens.WardrobeScreen
-import com.example.uidesign.screens.AddScreen
+
 import com.example.uidesign.ui.theme.UIDesignTheme
+
+import androidx.navigation.compose.rememberNavController
+import com.example.uidesign.navigation.AppNavGraph
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,23 +36,14 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-
-
-                    // 显示主页面
-                    // HomeScreen()
-
-                    // 如果要切换到其他页面，注释上面的 HomeScreen()，取消注释下面的页面
-//                     LoginScreen()
-//                     RegisterScreen(onBackClick = {})
-                     ProfileScreen()
-                    // CalendarScreen()
-                    // WardrobeScreen()
-//                     AddScreen()
+                    val navController = rememberNavController()
+                    AppNavGraph(navController = navController)
                 }
             }
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

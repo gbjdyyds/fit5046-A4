@@ -25,11 +25,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.uidesign.R
+import com.example.uidesign.navigation.BottomNavBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarScreen() {
+fun CalendarScreen(navController: NavController) {
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
     
@@ -57,94 +59,7 @@ fun CalendarScreen() {
     }
     
     Scaffold(
-        bottomBar = {
-            BottomAppBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = Color.White
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Home
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Home,
-                            contentDescription = "Home",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Home",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                    
-                    // Wardrobe
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Checkroom,
-                            contentDescription = "Wardrobe",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Wardrobe",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                    
-                    // Calendar - Active
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = "Calendar",
-                            tint = greenColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Calendar",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = greenColor,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                    
-                    // Profile
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = "Profile",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Profile",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        bottomBar = { BottomNavBar(navController, selected = "calendar") }
     ) { paddingValues ->
         Column(
             modifier = Modifier
