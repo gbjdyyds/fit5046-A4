@@ -14,5 +14,6 @@ data class Cloth(
     val lastWornDate: Long?,
     val wearCount: Int = 0,
     val imagePath: String?,         // local path of target image
-    val isDonated: Boolean = false
+    val isDonated: Boolean = false,
+    val createdAt: Long = System.currentTimeMillis()    // 计算no shopping day
 )
