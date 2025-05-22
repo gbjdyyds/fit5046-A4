@@ -28,10 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.example.uidesign.database.ClothType
-import com.example.uidesign.navigation.BottomNavBar
-import com.example.uidesign.viewmodel.AddClothViewModel
-import com.example.uidesign.viewmodel.AddClothViewModelFactory
+import com.example.ass4.database.ClothType
+import com.example.ass4.navigation.BottomNavBar
+import com.example.ass4.viewmodel.AddClothViewModel
+import com.example.ass4.viewmodel.AddClothViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 import java.io.File
 import java.io.FileOutputStream

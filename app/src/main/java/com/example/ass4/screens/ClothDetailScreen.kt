@@ -1,356 +1,320 @@
 package com.example.ass4.screens
 
+import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
 import com.example.ass4.database.ClothType
 import com.example.ass4.viewmodel.ClothDetailViewModel
-import java.text.SimpleDateFormat
+import com.example.ass4.viewmodel.ClothDetailViewModelFactory
 import java.util.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import coil.compose.AsyncImage
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClothDetailScreen(
     navController: NavController,
     clothId: Int,
-    onNavigateBack: () -> Unit,
-    viewModel: ClothDetailViewModel = viewModel()
+    viewModel: ClothDetailViewModel = viewModel(factory = ClothDetailViewModelFactory(LocalContext.current.applicationContext as Application, clothId))
 ) {
-    val greenColor = Color(0xFF2E7D32)
-    val lightGreenBg = Color(0xFFF5F5F5)
-    val redColor = Color(0xFFE53935)
-
     val cloth by viewModel.cloth.collectAsState()
     val isDonationSuggested by viewModel.isDonationSuggested.collectAsState()
-
-    var showTypeDialog by remember { mutableStateOf(false) }
-    var showColorDialog by remember { mutableStateOf(false) }
-    var showFabricDialog by remember { mutableStateOf(false) }
-
     val context = LocalContext.current
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.updateImage(it.toString()) }
+
+    // State for editable fields
+    var name by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf("") }
+    var color by remember { mutableStateOf("") }
+    var fabric by remember { mutableStateOf("") }
+    var imagePath by remember { mutableStateOf<String?>(null) }
+    var typeExpanded by remember { mutableStateOf(false) }
+    val typeOptions = listOf("CAP", "TOP", "BOTTOM", "SHOES")
+
+    
+    // Add state for debugging fields
+    var lastWornDate by remember { mutableStateOf("") }
+    var wearCount by remember { mutableStateOf("") }
+
+    // Donation dialog state
+    var showDonationDialog by remember { mutableStateOf(false) }
+
+    // State for error handling
+    var nameError by remember { mutableStateOf(false) }
+    var typeError by remember { mutableStateOf(false) }
+
+    // On cloth loaded, set initial values
+    LaunchedEffect(cloth) {
+        cloth?.let {
+            name = it.name
+            type = it.type.name
+            color = it.color.orEmpty()
+            fabric = it.fabric.orEmpty()
+            imagePath = it.imagePath
+            // Set debug fields
+            lastWornDate = it.lastWornDate?.toString() ?: ""
+            wearCount = it.wearCount?.toString() ?: ""
+        }
     }
-
-    // 👇 解决关键：提前初始化输入状态（避免在 AlertDialog 中写 remember）
-    val initialColor = cloth?.color ?: ""
-    var colorInput by remember(cloth?.id) { mutableStateOf(initialColor) }
-
-    val initialFabric = cloth?.fabric ?: ""
-    var fabricInput by remember(cloth?.id) { mutableStateOf(initialFabric) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Edit Cloth Detail") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = greenColor
-                )
-            )
-        },
-        bottomBar = {
-            BottomNavigationBar(greenColor)
+            TopAppBar(title = { Text("Cloth Detail") })
         }
     ) { paddingValues ->
-        cloth?.let { currentCloth ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(lightGreenBg)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                // Image
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(currentCloth.imagePath),
-                        contentDescription = currentCloth.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    if (isDonationSuggested) {
-                        Surface(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(8.dp),
-                            color = redColor,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = "Donate",
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-
-                    FloatingActionButton(
-                        onClick = { imagePicker.launch("image/*") },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(8.dp),
-                        containerColor = greenColor
-                    ) {
-                        Icon(Icons.Default.Edit, "Change image")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(Color(0xFFF5F5F5))
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp)
+        ) {
+            item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        OutlinedTextField(
-                            value = currentCloth.name,
-                            onValueChange = { viewModel.updateName(it) },
-                            label = { Text("Name") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = greenColor,
-                                focusedLabelColor = greenColor
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        // Image with donation icon if needed
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .border(BorderStroke(1.dp, Color(0xFFE0E0E0)), RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.TopEnd
                         ) {
-                            OutlinedTextField(
-                                value = currentCloth.type.name,
-                                onValueChange = { },
-                                label = { Text("Type") },
-                                modifier = Modifier.weight(1f),
-                                readOnly = true,
-                                trailingIcon = {
-                                    IconButton(onClick = { showTypeDialog = true }) {
-                                        Icon(Icons.Default.Edit, "Edit type")
-                                    }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = greenColor,
-                                    focusedLabelColor = greenColor
+                            if (imagePath != null) {
+                                AsyncImage(model = imagePath, contentDescription = null, modifier = Modifier.fillMaxSize())
+                            }
+                            if (isDonationSuggested) {
+                                IconButton(
+                                    onClick = { showDonationDialog = true },
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite, // 换成你喜欢的 donation icon
+                                        contentDescription = "Donation Suggestion",
+                                        tint = Color.Red
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Editable fields
+                        // Name input field
+                        InputField(
+                            label = "Name *",
+                            value = name,
+                            onValueChange = {
+                                name = it
+                                nameError = it.isBlank()
+                            },
+                            isError = nameError,
+                            errorText = "Name is required"
+                        )
+                        
+                        // Type dropdown
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text("Type *", color = Color(0xFF2E7D32), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Spacer(Modifier.height(8.dp))
+                            ExposedDropdownMenuBox(
+                                expanded = typeExpanded,
+                                onExpandedChange = { typeExpanded = !typeExpanded }
+                            ) {
+                                OutlinedTextField(
+                                    value = type,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    isError = typeError,
+                                    placeholder = { Text("Select type") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        unfocusedContainerColor = Color.White,
+                                        focusedContainerColor = Color.White,
+                                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                                        focusedBorderColor = Color(0xFF2E7D32)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    singleLine = true
                                 )
-                            )
-
-                            OutlinedTextField(
-                                value = currentCloth.color ?: "",
-                                onValueChange = { },
-                                label = { Text("Color") },
-                                modifier = Modifier.weight(1f),
-                                readOnly = true,
-                                trailingIcon = {
-                                    IconButton(onClick = { showColorDialog = true }) {
-                                        Icon(Icons.Default.Edit, "Edit color")
+                                ExposedDropdownMenu(
+                                    expanded = typeExpanded,
+                                    onDismissRequest = { typeExpanded = false }
+                                ) {
+                                    typeOptions.forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option) },
+                                            onClick = {
+                                                type = option
+                                                typeExpanded = false
+                                                typeError = false
+                                            }
+                                        )
                                     }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = greenColor,
-                                    focusedLabelColor = greenColor
-                                )
-                            )
+                                }
+                            }
+                            if (typeError) Text("Type is required", color = Color.Red, fontSize = 12.sp)
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        InputField("Color", color, { color = it }, false, "")
+                        InputField("Fabric", fabric, { fabric = it }, false, "")
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = currentCloth.fabric ?: "",
-                                onValueChange = { },
-                                label = { Text("Fabric") },
-                                modifier = Modifier.weight(1f),
-                                readOnly = true,
-                                trailingIcon = {
-                                    IconButton(onClick = { showFabricDialog = true }) {
-                                        Icon(Icons.Default.Edit, "Edit fabric")
-                                    }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = greenColor,
-                                    focusedLabelColor = greenColor
-                                )
-                            )
-
-                            OutlinedTextField(
-                                value = currentCloth.wearCount.toString(),
-                                onValueChange = { },
-                                label = { Text("Wear Count") },
-                                modifier = Modifier.weight(1f),
-                                readOnly = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = greenColor,
-                                    focusedLabelColor = greenColor
-                                )
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedTextField(
-                            value = currentCloth.lastWornDate?.let {
-                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
-                            } ?: "Never worn",
-                            onValueChange = { },
-                            label = { Text("Last Worn") },
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = greenColor,
-                                focusedLabelColor = greenColor
-                            )
+                        // Uneditable fields
+                        Divider()
+                        // Text("Last Worn: ${cloth?.lastWornDate?.let { Date(it).toLocaleString() } ?: "N/A"}")
+                        // Text("Wear Count: ${cloth?.wearCount ?: 0}")
+                        // Editable for debugging:
+                        InputField(
+                            label = "Last Worn Date (timestamp)",
+                            value = lastWornDate,
+                            onValueChange = { lastWornDate = it },
+                            isError = false,
+                            errorText = ""
                         )
+                        InputField(
+                            label = "Wear Count",
+                            value = wearCount,
+                            onValueChange = { wearCount = it },
+                            isError = false,
+                            errorText = ""
+                        )
+                        Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
+                    }
+                }
+            }
+            // Action buttons
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            navController.navigate("wardrobe") {
+                                popUpTo("cloth_detail") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        },
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Text("Back", fontSize = 16.sp)
+                    }
+                    Button(
+                        onClick = {
+                            nameError = name.isBlank()
+                            typeError = type.isBlank()
+                            val hasError = nameError || typeError
+                            if (hasError) {
+                                Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            val typeEnum = try { ClothType.valueOf(type.uppercase()) } catch (e: Exception) { return@Button }
+                            viewModel.updateCloth(
+                                name = name,
+                                type = typeEnum,
+                                color = if (color.isBlank()) null else color,
+                                fabric = if (fabric.isBlank()) null else fabric,
+                                imagePath = imagePath,
+                                // Pass debug fields
+                                lastWornDate = lastWornDate.toLongOrNull(),
+                                wearCount = wearCount.toIntOrNull()
+                            )
+                            Toast.makeText(context, "Cloth updated", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text("Save", fontSize = 16.sp)
                     }
                 }
             }
         }
-
-        // Dialogs
-        if (showTypeDialog) {
+        // Donation dialog
+        if (showDonationDialog) {
             AlertDialog(
-                onDismissRequest = { showTypeDialog = false },
-                title = { Text("Select Type") },
-                text = {
-                    Column {
-                        ClothType.values().forEach { type ->
-                            TextButton(
-                                onClick = {
-                                    viewModel.updateType(type)
-                                    showTypeDialog = false
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(type.name)
+                onDismissRequest = { showDonationDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteClothAndReturn {
+                            navController.navigate("wardrobe") {
+                                popUpTo("cloth_detail") { inclusive = true }
+                                launchSingleTop = true
                             }
                         }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showTypeDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-
-        if (showColorDialog) {
-            AlertDialog(
-                onDismissRequest = { showColorDialog = false },
-                title = { Text("Enter Color") },
-                text = {
-                    OutlinedTextField(
-                        value = colorInput,
-                        onValueChange = { colorInput = it },
-                        label = { Text("Color") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.updateColor(colorInput)
-                        showColorDialog = false
-                    }) {
-                        Text("Save")
-                    }
+                    }) { Text("Confirm") }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showColorDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
-        }
-
-        if (showFabricDialog) {
-            AlertDialog(
-                onDismissRequest = { showFabricDialog = false },
-                title = { Text("Enter Fabric") },
-                text = {
-                    OutlinedTextField(
-                        value = fabricInput,
-                        onValueChange = { fabricInput = it },
-                        label = { Text("Fabric") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    TextButton(onClick = { showDonationDialog = false }) { Text("Cancel") }
                 },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.updateFabric(fabricInput)
-                        showFabricDialog = false
-                    }) {
-                        Text("Save")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showFabricDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
+                title = { Text("Donation Suggestion") },
+                text = { Text("You haven't worn this item for a year. Would you like to donate it to someone in need?") }
             )
         }
     }
 }
 
 @Composable
-private fun BottomNavigationBar(greenColor: Color) {
-    BottomAppBar(modifier = Modifier.height(64.dp), containerColor = Color.White) {
-        Row(
+fun InputField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String,
+    greenColor: Color = Color(0xFF2E7D32),
+    lightGray: Color = Color(0xFFE0E0E0)
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(label, color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            isError = isError,
+            placeholder = { Text("Add $label") },
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf("Home" to Icons.Outlined.Home, "Wardrobe" to Icons.Outlined.Checkroom, "Calendar" to Icons.Outlined.CalendarToday, "Profile" to Icons.Outlined.Person).forEachIndexed { index, (label, icon) ->
-                val isSelected = label == "Wardrobe"
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(icon, label, tint = if (isSelected) greenColor else Color.Gray, modifier = Modifier.size(24.dp))
-                    Text(label, fontSize = 12.sp, color = if (isSelected) greenColor else Color.Gray)
-                }
-            }
-        }
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White,
+                unfocusedBorderColor = lightGray,
+                focusedBorderColor = greenColor
+            ),
+            shape = RoundedCornerShape(8.dp),
+            singleLine = true
+        )
+        if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
     }
 }
+

@@ -32,7 +32,7 @@ class AddClothViewModel(
             lastWornDate = null,
             wearCount = 0,
             imagePath = imageUri,
-            isDonated = false
+            //isDonated = false
         )
         viewModelScope.launch {
             repository.insertCloth(cloth)
