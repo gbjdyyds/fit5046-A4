@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.uidesign"
+    namespace = "com.example.ass4"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.uidesign"
+        applicationId = "com.example.ass4"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
