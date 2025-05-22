@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +50,7 @@ fun ClothDetailScreen(
     var color by remember { mutableStateOf("") }
     var fabric by remember { mutableStateOf("") }
     var imagePath by remember { mutableStateOf<String?>(null) }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
     var typeExpanded by remember { mutableStateOf(false) }
     val typeOptions = listOf("CAP", "TOP", "BOTTOM", "SHOES")
 
@@ -56,6 +58,7 @@ fun ClothDetailScreen(
     // Add state for debugging fields
     var lastWornDate by remember { mutableStateOf("") }
     var wearCount by remember { mutableStateOf("") }
+    var createdAt by remember { mutableStateOf("") }
 
     // Donation dialog state
     var showDonationDialog by remember { mutableStateOf(false) }
@@ -63,6 +66,14 @@ fun ClothDetailScreen(
     // State for error handling
     var nameError by remember { mutableStateOf(false) }
     var typeError by remember { mutableStateOf(false) }
+
+    // Image picker launcher, saves image to internal storage and updates preview
+    val imageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        imageUri = uri
+        imagePath = uri?.let { copyImageToInternalStorage(context, it) }
+    }
 
     // On cloth loaded, set initial values
     LaunchedEffect(cloth) {
@@ -75,6 +86,7 @@ fun ClothDetailScreen(
             // Set debug fields
             lastWornDate = it.lastWornDate?.toString() ?: ""
             wearCount = it.wearCount?.toString() ?: ""
+            createdAt = it.createdAt?.toString() ?: ""
         }
     }
 
@@ -110,10 +122,13 @@ fun ClothDetailScreen(
                                 .fillMaxWidth()
                                 .height(150.dp)
                                 .border(BorderStroke(1.dp, Color(0xFFE0E0E0)), RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp)),
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { imageLauncher.launch("image/*") },
                             contentAlignment = Alignment.TopEnd
                         ) {
-                            if (imagePath != null) {
+                            if (imageUri != null) {
+                                AsyncImage(model = imageUri, contentDescription = null, modifier = Modifier.fillMaxSize())
+                            } else if (imagePath != null) {
                                 AsyncImage(model = imagePath, contentDescription = null, modifier = Modifier.fillMaxSize())
                             }
                             if (isDonationSuggested) {
@@ -124,7 +139,7 @@ fun ClothDetailScreen(
                                         .size(32.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Favorite, // 换成你喜欢的 donation icon
+                                        imageVector = Icons.Default.Favorite,
                                         contentDescription = "Donation Suggestion",
                                         tint = Color.Red
                                     )
@@ -198,6 +213,7 @@ fun ClothDetailScreen(
                         Divider()
                         // Text("Last Worn: ${cloth?.lastWornDate?.let { Date(it).toLocaleString() } ?: "N/A"}")
                         // Text("Wear Count: ${cloth?.wearCount ?: 0}")
+                        // Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
                         // Editable for debugging:
                         InputField(
                             label = "Last Worn Date (timestamp)",
@@ -213,7 +229,13 @@ fun ClothDetailScreen(
                             isError = false,
                             errorText = ""
                         )
-                        Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
+                        InputField(
+                            label = "Created At (timestamp)",
+                            value = createdAt,
+                            onValueChange = { createdAt = it },
+                            isError = false,
+                            errorText = ""
+                        )
                     }
                 }
             }
@@ -252,7 +274,8 @@ fun ClothDetailScreen(
                                 imagePath = imagePath,
                                 // Pass debug fields
                                 lastWornDate = lastWornDate.toLongOrNull(),
-                                wearCount = wearCount.toIntOrNull()
+                                wearCount = wearCount.toIntOrNull(),
+                                createdAt = createdAt.toLongOrNull()
                             )
                             Toast.makeText(context, "Cloth updated", Toast.LENGTH_SHORT).show()
                         }
@@ -285,5 +308,3 @@ fun ClothDetailScreen(
         }
     }
 }
-
-

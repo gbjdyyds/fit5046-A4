@@ -54,7 +54,8 @@ class ClothDetailViewModel(application: Application, private val clothId: Int) :
         fabric: String?,
         imagePath: String?,
         lastWornDate: Long?,
-        wearCount: Int?
+        wearCount: Int?,
+        createdAt: Long?
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             _cloth.value?.let { oldCloth ->
@@ -65,7 +66,8 @@ class ClothDetailViewModel(application: Application, private val clothId: Int) :
                     fabric = fabric,
                     imagePath = imagePath,
                     lastWornDate = lastWornDate,
-                    wearCount = wearCount ?: oldCloth.wearCount
+                    wearCount = wearCount ?: oldCloth.wearCount,
+                    createdAt = createdAt ?: oldCloth.createdAt
                 )
                 repository.updateCloth(updated)
                 _cloth.value = updated
