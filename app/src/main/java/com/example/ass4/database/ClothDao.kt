@@ -34,24 +34,12 @@ interface ClothDao {
     @Query("DELETE FROM clothes WHERE uid = :uid")
     suspend fun deleteAllForUser(uid: String)
 
-    @Query("UPDATE clothes SET name = :name WHERE id = :id")
-    suspend fun updateClothName(id: Int, name: String)
-
-    @Query("UPDATE clothes SET type = :type WHERE id = :id")
-    suspend fun updateClothType(id: Int, type: ClothType)
-
-    @Query("UPDATE clothes SET color = :color WHERE id = :id")
-    suspend fun updateClothColor(id: Int, color: String)
-
-    @Query("UPDATE clothes SET fabric = :fabric WHERE id = :id")
-    suspend fun updateClothFabric(id: Int, fabric: String)
-
-    @Query("UPDATE clothes SET imagePath = :imagePath WHERE id = :id")
-    suspend fun updateClothImage(id: Int, imagePath: String)
-
     @Query("UPDATE clothes SET wearCount = wearCount + 1 WHERE id = :id")
     suspend fun incrementWearCount(id: Int)
 
     @Query("UPDATE clothes SET lastWornDate = :timestamp WHERE id = :id")
     suspend fun updateLatestWornDate(id: Int, timestamp: Long = System.currentTimeMillis())
+
+    @Query("SELECT MAX(createdAt) FROM clothes")
+    suspend fun getMostRecentCreatedAt(): Long?
 }
