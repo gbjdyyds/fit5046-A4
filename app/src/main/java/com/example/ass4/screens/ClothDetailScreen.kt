@@ -58,6 +58,7 @@ fun ClothDetailScreen(
     // Add state for debugging fields
     var lastWornDate by remember { mutableStateOf("") }
     var wearCount by remember { mutableStateOf("") }
+    var createdAt by remember { mutableStateOf("") }
 
     // Donation dialog state
     var showDonationDialog by remember { mutableStateOf(false) }
@@ -85,6 +86,7 @@ fun ClothDetailScreen(
             // Set debug fields
             lastWornDate = it.lastWornDate?.toString() ?: ""
             wearCount = it.wearCount?.toString() ?: ""
+            createdAt = it.createdAt?.toString() ?: ""
         }
     }
 
@@ -211,6 +213,7 @@ fun ClothDetailScreen(
                         Divider()
                         // Text("Last Worn: ${cloth?.lastWornDate?.let { Date(it).toLocaleString() } ?: "N/A"}")
                         // Text("Wear Count: ${cloth?.wearCount ?: 0}")
+                        // Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
                         // Editable for debugging:
                         InputField(
                             label = "Last Worn Date (timestamp)",
@@ -226,7 +229,13 @@ fun ClothDetailScreen(
                             isError = false,
                             errorText = ""
                         )
-                        Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
+                        InputField(
+                            label = "Created At (timestamp)",
+                            value = createdAt,
+                            onValueChange = { createdAt = it },
+                            isError = false,
+                            errorText = ""
+                        )
                     }
                 }
             }
@@ -265,7 +274,8 @@ fun ClothDetailScreen(
                                 imagePath = imagePath,
                                 // Pass debug fields
                                 lastWornDate = lastWornDate.toLongOrNull(),
-                                wearCount = wearCount.toIntOrNull()
+                                wearCount = wearCount.toIntOrNull(),
+                                createdAt = createdAt.toLongOrNull()
                             )
                             Toast.makeText(context, "Cloth updated", Toast.LENGTH_SHORT).show()
                         }
