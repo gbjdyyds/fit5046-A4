@@ -31,13 +31,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _email = MutableStateFlow(user?.email ?: "No Email")
     val email: StateFlow<String> = _email
 
-
-//    private val _userName = MutableStateFlow("Sarah Chen")
-//    val userName: StateFlow<String> = _userName
-//
-//    private val _email = MutableStateFlow("sarah.chen@gmail.com")
-//    val email: StateFlow<String> = _email
-
 //    private val _createdAt = MutableStateFlow(System.currentTimeMillis() - 100L * 24 * 60 * 60 * 1000) // 100 days ago
     private val _createdAt = MutableStateFlow(System.currentTimeMillis())
     val createdAt: StateFlow<Long> = _createdAt
@@ -94,15 +87,27 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     fun generateYearMonthOptions(from: Long): List<String> {
         val now = LocalDate.now()
         val fromDate = Date(from).toInstant().atZone(ZoneId.systemDefault()).toLocalDate()
+
         val formatter = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
         val options = mutableListOf<String>()
+
         var cursor = fromDate
         while (!cursor.isAfter(now)) {
             options.add(cursor.format(formatter))
             cursor = cursor.plusMonths(1)
         }
+
+        // 如果为空，默认给 6 个月范围
+        if (options.isEmpty()) {
+            val fallback = now.minusMonths(5)
+            for (i in 0..5) {
+                options.add(fallback.plusMonths(i.toLong()).format(formatter))
+            }
+        }
+
         return options
     }
+
 
     fun loadProfileData() {
         viewModelScope.launch {

@@ -80,7 +80,7 @@ fun ProfileScreen(navController: NavController) {
             item { SectionTitle("My Achievements") }
             item {
                 AchievementRow(Icons.Filled.Nature, "Eco Warrior", "30 Days No Shopping", isEcoWarrior)
-                AchievementRow(Icons.Filled.Star, "Style Master", "50 Items Owned", isCollector)
+                AchievementRow(Icons.Filled.Star, "Style Master", "重复使用同一件衣服超过50次", isCollector)
                 AchievementRow(Icons.Filled.CheckCircle, "Minimalist", "10~20 Item Wardrobe", isMinimalist)
             }
             item { SectionTitle("Monthly Usage Trend") }

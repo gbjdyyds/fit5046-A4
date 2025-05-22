@@ -76,9 +76,11 @@ class MainActivity : ComponentActivity() {
 
                 AppNavGraph(
                     navController = navController,
-                    onGoogleSignInClick = {
-                        val signInIntent = googleSignInClient.signInIntent
-                        launcher.launch(signInIntent)
+                    onGoogleSignInClick =  {
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            val signInIntent = googleSignInClient.signInIntent
+                            launcher.launch(signInIntent)
+                        }
                     }
                 )
             }

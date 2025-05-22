@@ -16,11 +16,10 @@ class AddClothViewModel(
     private val repository = ClothRepository(application)
 
     fun saveCloth(
-        uid: String,
         name: String,
         type: ClothType,
-        color: String,
-        fabric: String,
+        color: String?,
+        fabric: String?,
         imageUri: String?
     ) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -33,7 +32,7 @@ class AddClothViewModel(
             lastWornDate = null,
             wearCount = 0,
             imagePath = imageUri,
-            isDonated = false
+//            isDonated = false
         )
         viewModelScope.launch {
             repository.insertCloth(cloth)
