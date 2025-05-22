@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +36,7 @@ import com.google.firebase.auth.FirebaseAuth
 import java.io.File
 import java.io.FileOutputStream
 
+// Utility function to copy the selected image to app's internal storage and return its path
 fun copyImageToInternalStorage(context: android.content.Context, uri: Uri): String? {
     return try {
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
@@ -62,36 +62,37 @@ fun AddScreen(navController: NavController) {
     val application = context.applicationContext as Application
     val viewModel: AddClothViewModel = viewModel(factory = AddClothViewModelFactory(application))
 
+    // Color constants for UI
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
     val lightGray = Color(0xFFE0E0E0)
     val darkGray = Color(0xFF757575)
 
-    var style by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf("") }
-    var color by remember { mutableStateOf("") }
-    var fabricWeight by remember { mutableStateOf("") }
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var savedImagePath by remember { mutableStateOf<String?>(null) }
-    var typeExpanded by remember { mutableStateOf(false) }
-    val typeOptions = listOf("CAP", "TOP", "BOTTOM", "SHOES")
+    // State for each input field, matching Cloth class attributes
+    var name by remember { mutableStateOf("") }           // Clothing name
+    var type by remember { mutableStateOf("") }           // Clothing type (enum as string)
+    var color by remember { mutableStateOf("") }          // Clothing color
+    var fabric by remember { mutableStateOf("") }         // Clothing fabric
+    var imageUri by remember { mutableStateOf<Uri?>(null) } // Uri for preview
+    var imagePath by remember { mutableStateOf<String?>(null) } // Saved image path
+    var typeExpanded by remember { mutableStateOf(false) }  // Dropdown menu state
+    val typeOptions = listOf("CAP", "TOP", "BOTTOM", "SHOES") // Enum options
+    
+    // Info dialog state for cloth type
+    var showTypeInfoDialog by remember { mutableStateOf(false) }
 
-    var styleError by remember { mutableStateOf(false) }
+    // Error state for each required field
+    var nameError by remember { mutableStateOf(false) }
     var typeError by remember { mutableStateOf(false) }
-    var colorError by remember { mutableStateOf(false) }
-    var fabricWeightError by remember { mutableStateOf(false) }
 
+    // Image picker launcher, saves image to internal storage and updates preview
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> 
+    ) { uri: Uri? ->
         imageUri = uri
-        if (uri != null) {
-            savedImagePath = copyImageToInternalStorage(context, uri)
-            if (savedImagePath == null) {
-                Toast.makeText(context, "Failed to copy image", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            savedImagePath = null
+        imagePath = uri?.let { copyImageToInternalStorage(context, it) }
+        if (uri != null && imagePath == null) {
+            Toast.makeText(context, "Failed to copy image", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -110,6 +111,7 @@ fun AddScreen(navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
+            // Main card for input fields of cloth details
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -122,6 +124,7 @@ fun AddScreen(navController: NavController) {
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
+                        // Image upload and preview
                         Column {
                             Text("Item Photo *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                             Spacer(Modifier.height(8.dp))
@@ -135,8 +138,10 @@ fun AddScreen(navController: NavController) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (imageUri != null) {
+                                    // Preview the selected image
                                     AsyncImage(model = imageUri, contentDescription = null, modifier = Modifier.fillMaxSize())
                                 } else {
+                                    //Empty Placeholder UI
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Icon(Icons.Default.Add, contentDescription = null, tint = greenColor)
                                         Text("Click to upload", color = darkGray, fontSize = 14.sp)
@@ -145,37 +150,34 @@ fun AddScreen(navController: NavController) {
                                 }
                             }
                         }
-                        @Composable
-                        fun inputField(label: String, value: String, onValueChange: (String) -> Unit, isError: Boolean, errorText: String) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("$label *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                Spacer(Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = value,
-                                    onValueChange = onValueChange,
-                                    isError = isError,
-                                    placeholder = { Text("Add $label") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        unfocusedContainerColor = Color.White,
-                                        focusedContainerColor = Color.White,
-                                        unfocusedBorderColor = lightGray,
-                                        focusedBorderColor = greenColor
-                                    ),
-                                    shape = RoundedCornerShape(8.dp),
-                                    singleLine = true
-                                )
-                                if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
-                            }
-                        }
+                        
+                        // Name input field
+                        InputField(
+                            label = "Name *",
+                            value = name,
+                            onValueChange = {
+                                name = it
+                                nameError = it.isBlank()
+                            },
+                            isError = nameError,
+                            errorText = "Name is required"
+                        )
 
-                        inputField("Style", style, {
-                            style = it
-                            styleError = it.isBlank()
-                        }, styleError, "Style is required")
-
+                        
+                        // Type, a dropdown list of predefined option: cap, top, bottom and shoes
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Text("Type *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Type *", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(4.dp))
+                                IconButton(onClick = { showTypeInfoDialog = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Type Info",
+                                        tint = greenColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                             Spacer(Modifier.height(8.dp))
                             ExposedDropdownMenuBox(
                                 expanded = typeExpanded,
@@ -218,32 +220,65 @@ fun AddScreen(navController: NavController) {
                             }
                             if (typeError) Text("Type is required", color = Color.Red, fontSize = 12.sp)
                         }
+                        // Show info dialog for type
+                        if (showTypeInfoDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showTypeInfoDialog = false },
+                                confirmButton = {
+                                    TextButton(onClick = { showTypeInfoDialog = false }) {
+                                        Text("Got it")
+                                    }
+                                },
+                                title = { Text("Clothing Type Guide") },
+                                text = {
+                                    Text(
+                                        """
+                                        • CAP: Hat, cap, beanie
+                                        • TOP: T-shirt, hoodie, jacket
+                                        • BOTTOM: Pants, jeans, skirt
+                                        • SHOES: Sneakers, boots, sandals
+                                        """.trimIndent()
+                                    )
+                                }
+                            )
+                        }
 
-                        inputField("Color", color, {
-                            color = it
-                            colorError = it.isBlank()
-                        }, colorError, "Color is required")
+                        // Color input field (not required)
+                        InputField(
+                            label = "Color",
+                            value = color,
+                            onValueChange = { color = it },
+                            isError = false,
+                            errorText = ""
+                        )
 
-                        inputField("Fabric Weight", fabricWeight, {
-                            fabricWeight = it
-                            fabricWeightError = it.isBlank()
-                        }, fabricWeightError, "Fabric Weight is required")
+                        // Fabric input field (not required)
+                        InputField(
+                            label = "Fabric",
+                            value = fabric,
+                            onValueChange = { fabric = it },
+                            isError = false,
+                            errorText = ""
+                        )
                     }
                 }
             }
-
+            // Action buttons (Cancel and Save)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
+                    // "Cancel" button
                     OutlinedButton(
                         onClick = {
-                            style = ""
+                            // Reset all fields and navigate back
+                            name = ""
                             type = ""
                             color = ""
-                            fabricWeight = ""
+                            fabric = ""
                             imageUri = null
+                            imagePath = null
                             navController.navigate("wardrobe") {
                                 popUpTo("add") { inclusive = true }
                                 launchSingleTop = true
@@ -254,51 +289,46 @@ fun AddScreen(navController: NavController) {
                     ) {
                         Text("Cancel", fontSize = 16.sp)
                     }
-
+                    
+                    // "Save" button
                     Button(
                         colors = ButtonDefaults.buttonColors(containerColor = greenColor),
                         onClick = {
-                            val hasError = style.isBlank() || type.isBlank() || color.isBlank() || fabricWeight.isBlank()
-                            styleError = style.isBlank()
+                            
+                            // Validate all required fields
+                            nameError = name.isBlank()
                             typeError = type.isBlank()
-                            colorError = color.isBlank()
-                            fabricWeightError = fabricWeight.isBlank()
-
+                            val hasError = nameError || typeError
                             if (hasError) {
                                 Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
 
-                            val uid = FirebaseAuth.getInstance().currentUser?.uid
-                            if (uid == null) {
-                                Toast.makeText(context, "User not logged in", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-
+                            // Robust protection that ensure only valid cloth type is saved, and prevent data anomalies
                             val typeEnum = try {
                                 ClothType.valueOf(type.uppercase())
                             } catch (e: Exception) {
                                 Toast.makeText(context, "Invalid type", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-
+                            
+                            // Save the cloth using ViewModel
                             viewModel.saveCloth(
-                                uid = uid,
-                                name = style,
+                                name = name,
                                 type = typeEnum,
-                                color = color,
-                                fabric = fabricWeight,
-                                imageUri = savedImagePath
+                                color = if (color.isBlank()) null else color,
+                                fabric = if (fabric.isBlank()) null else fabric,
+                                imageUri = imagePath
                             )
-
                             Toast.makeText(context, "Item saved to wardrobe", Toast.LENGTH_SHORT).show()
-
-                            style = ""
+                            
+                            // Reset all fields after saving
+                            name = ""
                             type = ""
                             color = ""
-                            fabricWeight = ""
+                            fabric = ""
                             imageUri = null
-
+                            imagePath = null
                             navController.navigate("wardrobe") {
                                 popUpTo("add") { inclusive = true }
                                 launchSingleTop = true
@@ -307,9 +337,41 @@ fun AddScreen(navController: NavController) {
                     ) {
                         Text("Save Item", fontSize = 16.sp)
                     }
-
                 }
             }
         }
+    }
+}
+
+// Reusable input field composable for text input
+@Composable
+fun InputField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String,
+    greenColor: Color = Color(0xFF2E7D32),
+    lightGray: Color = Color(0xFFE0E0E0)
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text("$label", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            isError = isError,
+            placeholder = { Text("Add $label") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White,
+                unfocusedBorderColor = lightGray,
+                focusedBorderColor = greenColor
+            ),
+            shape = RoundedCornerShape(8.dp),
+            singleLine = true
+        )
+        if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
     }
 }

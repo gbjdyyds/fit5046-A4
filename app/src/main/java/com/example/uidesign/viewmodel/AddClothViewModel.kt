@@ -16,11 +16,10 @@ class AddClothViewModel(
     private val repository = ClothRepository(application)
 
     fun saveCloth(
-        uid: String,
         name: String,
         type: ClothType,
-        color: String,
-        fabric: String,
+        color: String?,
+        fabric: String?,
         imageUri: String?
     ) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
