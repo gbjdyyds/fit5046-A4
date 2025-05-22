@@ -21,8 +21,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val weatherApi = WeatherApiService.create()
     private val apiKey = "f68cad898ed653358aefda32b2ae868a" // 你的 OpenWeather API Key
 
-    // 假设你有当前登录用户ID
-    var currentUid: String = "Alice" // 实际开发中请从登录获取
+    var currentUid: String = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
     // 天气
     private val _weather = MutableStateFlow<WeatherResponse?>(null)
