@@ -30,11 +30,7 @@ import com.example.ass4.viewmodel.WardrobeViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.navigation.NavController
-<<<<<<< Updated upstream:app/src/main/java/com/example/uidesign/screens/WardrobeScreen.kt
-import com.example.uidesign.navigation.BottomNavBar
-=======
 import com.example.ass4.navigation.BottomNavBar
->>>>>>> Stashed changes:app/src/main/java/com/example/ass4/screens/WardrobeScreen.kt
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,11 +43,7 @@ fun WardrobeScreen(
 ) {
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
-<<<<<<< Updated upstream:app/src/main/java/com/example/uidesign/screens/WardrobeScreen.kt
-    
-=======
 
->>>>>>> Stashed changes:app/src/main/java/com/example/ass4/screens/WardrobeScreen.kt
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
     if (currentUserId == null) {
@@ -68,11 +60,7 @@ fun WardrobeScreen(
 
     // the state fo search field
     var searchQuery by remember { mutableStateOf("") }
-<<<<<<< Updated upstream:app/src/main/java/com/example/uidesign/screens/WardrobeScreen.kt
-    
-=======
 
->>>>>>> Stashed changes:app/src/main/java/com/example/ass4/screens/WardrobeScreen.kt
     // the clothes of the search result
     val filteredClothes = userClothes.filter {
         searchQuery.isEmpty() || it.name.contains(searchQuery, ignoreCase = true)
@@ -106,13 +94,8 @@ fun WardrobeScreen(
                 ),
                 modifier = Modifier.padding(vertical = 12.dp)
             )
-<<<<<<< Updated upstream:app/src/main/java/com/example/uidesign/screens/WardrobeScreen.kt
-            
-            // Search 
-=======
 
             // Search
->>>>>>> Stashed changes:app/src/main/java/com/example/ass4/screens/WardrobeScreen.kt
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -183,11 +166,7 @@ fun ClothCard(
                     contentScale = ContentScale.Crop
                 )
 
-<<<<<<< Updated upstream:app/src/main/java/com/example/uidesign/screens/WardrobeScreen.kt
-                
-=======
 
->>>>>>> Stashed changes:app/src/main/java/com/example/ass4/screens/WardrobeScreen.kt
                 // donation tag
                 if (isDonationSuggested) {
                     Surface(

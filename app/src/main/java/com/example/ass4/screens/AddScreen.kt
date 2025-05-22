@@ -83,11 +83,7 @@ fun AddScreen(navController: NavController) {
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-<<<<<<< Updated upstream:app/src/main/java/com/example/uidesign/screens/AddScreen.kt
-    ) { uri: Uri? -> 
-=======
     ) { uri: Uri? ->
->>>>>>> Stashed changes:app/src/main/java/com/example/ass4/screens/AddScreen.kt
         imageUri = uri
         if (uri != null) {
             savedImagePath = copyImageToInternalStorage(context, uri)
