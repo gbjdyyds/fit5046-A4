@@ -226,7 +226,6 @@ fun LoginScreen(
                     Text("Continue with Google", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                 }
             }
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

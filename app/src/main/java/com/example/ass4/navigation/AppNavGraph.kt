@@ -13,7 +13,8 @@ import com.example.ass4.screens.HomeScreen
 import com.example.ass4.screens.*
 
 @Composable
-fun AppNavGraph(navController: NavHostController) {
+fun AppNavGraph(navController: NavHostController,
+                onGoogleSignInClick: () -> Unit = {}) {
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(
@@ -21,7 +22,7 @@ fun AppNavGraph(navController: NavHostController) {
                 onNavigateToRegister = { navController.navigate("register") },
                 onNavigateToForgotPassword = { navController.navigate("forgotPassword") },
                 onLoginSuccess = { navController.navigate("home") },
-                onGoogleSignInClick = { /* handle */ }
+                onGoogleSignInClick = onGoogleSignInClick
             )
         }
         composable("register") {
