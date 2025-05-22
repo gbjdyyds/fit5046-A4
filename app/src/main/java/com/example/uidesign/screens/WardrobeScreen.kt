@@ -50,7 +50,6 @@ fun WardrobeScreen(
     val redColor = Color(0xFFE53935)
     val context = LocalContext.current
     
-    // 获取当前用户ID（这里需要替换为实际的用户认证逻辑）
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
     if (currentUserId == null) {
@@ -59,16 +58,16 @@ fun WardrobeScreen(
     }
 
 
-    // 获取用户衣物列表
+    // Get all clothes owned by the current user
     val userClothes by viewModel.getCurrentUserClothes(currentUserId).collectAsState(initial = emptyList())
 
-    // 获取需要捐赠提醒的衣物
+    // Get all clothes which need donation reminder
     val donationReminderClothes by viewModel.getDonationReminderClothes(currentUserId).collectAsState(initial = emptyList())
 
-    // 搜索状态
+    // the state fo search field
     var searchQuery by remember { mutableStateOf("") }
     
-    // 过滤后的衣物列表
+    // the clothes of the search result
     val filteredClothes = userClothes.filter {
         searchQuery.isEmpty() || it.name.contains(searchQuery, ignoreCase = true)
     }
@@ -102,7 +101,7 @@ fun WardrobeScreen(
                 modifier = Modifier.padding(vertical = 12.dp)
             )
             
-            // 搜索栏
+            // Search 
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -170,8 +169,9 @@ fun ClothCard(
                     painter = rememberAsyncImagePainter(cloth.imagePath),
                     contentDescription = cloth.name,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    ccaontentScale = ContentScale.Crop
                 )
+
                 
                 // donation tag
                 if (isDonationSuggested) {

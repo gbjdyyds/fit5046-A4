@@ -34,6 +34,26 @@ import com.example.uidesign.navigation.BottomNavBar
 import com.example.uidesign.viewmodel.AddClothViewModel
 import com.example.uidesign.viewmodel.AddClothViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
+import java.io.File
+import java.io.FileOutputStream
+
+fun copyImageToInternalStorage(context: android.content.Context, uri: Uri): String? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val fileName = "cloth_${System.currentTimeMillis()}.jpg"
+        val imagesDir = File(context.filesDir, "images")
+        if (!imagesDir.exists()) imagesDir.mkdirs()
+        val file = File(imagesDir, fileName)
+        val outputStream = FileOutputStream(file)
+        inputStream.copyTo(outputStream)
+        inputStream.close()
+        outputStream.close()
+        file.absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +72,7 @@ fun AddScreen(navController: NavController) {
     var color by remember { mutableStateOf("") }
     var fabricWeight by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var savedImagePath by remember { mutableStateOf<String?>(null) }
     var typeExpanded by remember { mutableStateOf(false) }
     val typeOptions = listOf("CAP", "TOP", "BOTTOM", "SHOES")
 
@@ -62,7 +83,17 @@ fun AddScreen(navController: NavController) {
 
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> imageUri = uri }
+    ) { uri: Uri? -> 
+        imageUri = uri
+        if (uri != null) {
+            savedImagePath = copyImageToInternalStorage(context, uri)
+            if (savedImagePath == null) {
+                Toast.makeText(context, "Failed to copy image", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            savedImagePath = null
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -257,7 +288,7 @@ fun AddScreen(navController: NavController) {
                                 type = typeEnum,
                                 color = color,
                                 fabric = fabricWeight,
-                                imageUri = imageUri?.toString()
+                                imageUri = savedImagePath
                             )
 
                             Toast.makeText(context, "Item saved to wardrobe", Toast.LENGTH_SHORT).show()
