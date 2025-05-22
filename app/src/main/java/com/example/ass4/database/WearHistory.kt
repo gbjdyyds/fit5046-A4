@@ -17,5 +17,6 @@ data class WearHistory(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val clothId: Int,
     val uid: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val eventTitle: String? = null
 )

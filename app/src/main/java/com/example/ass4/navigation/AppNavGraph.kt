@@ -60,7 +60,7 @@ fun AppNavGraph(navController: NavHostController,
             )
         }
         composable("calendar") {
-            CalendarScreen(navController)
+            CalendarScreen(navController = navController)
         }
         composable("add") {
             AddScreen(navController)

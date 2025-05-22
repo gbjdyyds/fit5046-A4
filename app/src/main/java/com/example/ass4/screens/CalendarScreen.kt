@@ -1,258 +1,325 @@
 package com.example.ass4.screens
 
+import android.app.Application
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import com.example.ass4.R
+import com.example.ass4.database.ClothType
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.example.ass4.R
+import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
+import com.example.ass4.database.Cloth
+import com.example.ass4.database.WearHistory
 import com.example.ass4.navigation.BottomNavBar
+import com.example.ass4.repository.ClothRepository
+import com.example.ass4.repository.WearHistoryRepository
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.res.painterResource
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
+import java.util.*
+import com.example.ass4.viewmodel.HomeViewModel
+import com.example.ass4.viewmodel.HomeViewModelFactory
+import androidx.lifecycle.viewmodel.compose.viewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun CalendarScreen(navController: NavController) {
+fun CalendarScreen(navController: NavHostController) {
+
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
-    
-    // 创建日历数据
-    val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-    val dates = (1..31).map { it.toString() }
-    val calendarItems = mutableListOf<CalendarItem>()
-    
-    // 添加日期，所有日期数字都是绿色
-    for (i in dates.indices) {
-        val outfitImage = when (dates[i]) {
-            "2" -> R.drawable.outfit_history_1
-            "6" -> R.drawable.outfit_history_2
-            "10" -> R.drawable.outfit_history_3
-            else -> null
+    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(application))
+    val clothRepo = remember { ClothRepository(application) }
+    val historyRepo = remember { WearHistoryRepository(application) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+// 用户衣物与选中项
+    val capList by viewModel.capList.collectAsState()
+    val topList by viewModel.topList.collectAsState()
+    val bottomList by viewModel.bottomList.collectAsState()
+    val shoesList by viewModel.shoesList.collectAsState()
+
+    val selectedCap by viewModel.selectedCap.collectAsState()
+    val selectedTop by viewModel.selectedTop.collectAsState()
+    val selectedBottom by viewModel.selectedBottom.collectAsState()
+    val selectedShoes by viewModel.selectedShoes.collectAsState()
+
+// 日历逻辑
+    val calendar = Calendar.getInstance()
+    val today = calendar.get(Calendar.DAY_OF_MONTH)
+    val currentYear = calendar.get(Calendar.YEAR)
+    val currentMonth = calendar.get(Calendar.MONTH)
+
+    var selectedYear by remember { mutableStateOf(currentYear) }
+    var selectedMonth by remember { mutableStateOf(currentMonth) }
+    val selectedYearMonth = YearMonth.of(selectedYear, selectedMonth + 1)
+    var showSelector by remember { mutableStateOf<ClothType?>(null) }
+    var allClothes by remember { mutableStateOf<List<Cloth>>(emptyList()) }
+    var wearMap by remember { mutableStateOf<Map<LocalDate, List<Cloth>>>(emptyMap()) }
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var upcomingEvents by remember { mutableStateOf<List<Pair<LocalDate, String>>>(emptyList()) }
+
+
+    LaunchedEffect(true) {
+        clothRepo.getClothesByUser(uid).collect { clothes ->
+            allClothes = clothes
         }
-        
-        calendarItems.add(
-            CalendarItem(
-                date = dates[i],
-                outfitImageRes = outfitImage,
-                isToday = dates[i] == "12"
-            )
-        )
     }
-    
-    Scaffold(
-        bottomBar = { BottomNavBar(navController, selected = "calendar") }
-    ) { paddingValues ->
+
+    LaunchedEffect(selectedYearMonth) {
+        historyRepo.getWearHistoryForUser(uid).collect { allHistory ->
+            val filtered = allHistory.filter {
+                val localDate = Instant.ofEpochMilli(it.timestamp)
+                    .atZone(ZoneId.systemDefault()).toLocalDate()
+                localDate.month == selectedYearMonth.month && localDate.year == selectedYearMonth.year
+            }
+            wearMap = filtered.groupBy {
+                Instant.ofEpochMilli(it.timestamp)
+                    .atZone(ZoneId.systemDefault()).toLocalDate()
+            }.mapValues { entry ->
+                entry.value.mapNotNull { h -> allClothes.find { it.id == h.clothId } }
+            }
+        }
+    }
+
+    Scaffold(bottomBar = { BottomNavBar(navController, "calendar") }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
                 .background(Color.White)
         ) {
-            // 标题 - 进一步增加顶部间距，避免遮挡状态栏和时间显示
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "Outfit Calendar",
-                style = TextStyle(
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = greenColor
-                ),
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+                style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = greenColor),
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
             )
-            
-            // 星期标题行
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                days.forEach { day ->
-                    Text(
-                        text = day,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center,
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            color = Color.Gray
-                        )
-                    )
+                DropdownSelector("Year", (currentYear - 10..currentYear + 10).map { it.toString() }, selectedYear.toString()) {
+                    selectedYear = it.toInt()
+                }
+                DropdownSelector("Month", listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+                    listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")[selectedMonth]) {
+                    selectedMonth = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec").indexOf(it)
                 }
             }
-            
-            // 日历网格 - 调整大小和间隔，让格子更高、图片更大
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1.6f)  // 增加权重，让日历部分更大
-                    .padding(start = 10.dp, end = 10.dp),  // 进一步减少左右内边距
-                horizontalArrangement = Arrangement.spacedBy(8.dp),  // 稍微减小水平间距
-                verticalArrangement = Arrangement.spacedBy(10.dp)    // 稍微减小垂直间距
-            ) {
-                items(calendarItems) { item ->
-                    CalendarDayItem(item = item, greenColor = greenColor, lightGreenBg = lightGreenBg)
-                }
-            }
-            
-            // 即将到来的事件标题 - 紧接日历区域
-            Text(
-                text = "Upcoming Events",
-                style = TextStyle(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = greenColor
-                ),
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp)
+
+            Spacer(modifier = Modifier.height(8.dp))
+            DayOfWeekHeader()
+            CalendarGrid(
+                yearMonth = selectedYearMonth,
+                today = today,
+                currentMonth = currentMonth,
+                currentYear = currentYear,
+                wearMap = wearMap,
+                onDayClick = {
+                    selectedDate = it
+                    showDialog = true
+                },
+                greenColor = greenColor,
+                lightGreenBg = lightGreenBg
             )
-            
-            // 事件卡片 - 更大、更突出
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 32.dp), // 进一步增加底部间距
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 3.dp
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 日期指示器
-                    Column(
-                        modifier = Modifier
-                            .background(lightGreenBg, RoundedCornerShape(8.dp))
-                            .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "MAR",
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = greenColor
+        }
+    }
+
+    if (showDialog) {
+        var eventTitle by remember { mutableStateOf("") }
+        val selectedCap by viewModel.selectedCap.collectAsState()
+        val selectedTop by viewModel.selectedTop.collectAsState()
+        val selectedBottom by viewModel.selectedBottom.collectAsState()
+        val selectedShoes by viewModel.selectedShoes.collectAsState()
+
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                Button(onClick = {
+                    val timestamp = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    coroutineScope.launch {
+                        listOfNotNull(
+                            selectedCap,
+                            selectedTop,
+                            selectedBottom,
+                            selectedShoes
+                        ).forEach { cloth ->
+                            historyRepo.insertWearHistory(
+                                WearHistory(
+                                    uid = uid,
+                                    clothId = cloth.id,
+                                    timestamp = timestamp,
+                                    eventTitle = eventTitle.takeIf { it.isNotBlank() }
+                                )
                             )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "12",
-                            style = TextStyle(
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = greenColor
-                            )
-                        )
+                        }
+                        showDialog = false
                     }
-                    
-                    Spacer(modifier = Modifier.width(20.dp))
-                    
-                    // 活动内容
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = "Office Meeting",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Grey Suit",
-                            style = TextStyle(
-                                fontSize = 16.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-                    
-                    // 服装图片 - 使用正确的outfit_suit.jpg，更大尺寸
-                    Image(
-                        painter = painterResource(id = R.drawable.outfit_suit),
-                        contentDescription = "Outfit for event",
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Fit
+                }) {
+                    Text("Confirm")
+                }
+            },
+            title = { Text("Add Event") },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TextField(
+                        value = eventTitle,
+                        onValueChange = { eventTitle = it },
+                        label = { Text("Event Title") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Select Outfit", fontWeight = FontWeight.Medium)
+                    OutfitPagerSelector(
+                        capList to selectedCap,
+                        topList to selectedTop,
+                        bottomList to selectedBottom,
+                        shoesList to selectedShoes,
+                        onCapSelect = { showSelector = ClothType.CAP },
+                        onCapClear = { viewModel.clearCloth(ClothType.CAP) },
+                        onTopSelect = { showSelector = ClothType.TOP },
+                        onTopClear = { viewModel.clearCloth(ClothType.TOP) },
+                        onBottomSelect = { showSelector = ClothType.BOTTOM },
+                        onBottomClear = { viewModel.clearCloth(ClothType.BOTTOM) },
+                        onShoesSelect = { showSelector = ClothType.SHOES },
+                        onShoesClear = { viewModel.clearCloth(ClothType.SHOES) }
                     )
                 }
+            }
+        )
+    }
+}
+
+@Composable
+fun DropdownSelector(label: String, options: List<String>, selected: String, onSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text("$label: $selected")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach {
+                DropdownMenuItem(
+                    text = { Text(it) },
+                    onClick = {
+                        onSelected(it)
+                        expanded = false
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun CalendarDayItem(
-    item: CalendarItem,
-    greenColor: Color,
-    lightGreenBg: Color
-) {
-    Box(
+fun DayOfWeekHeader() {
+    Row(
         modifier = Modifier
-            .aspectRatio(0.6f) // 进一步增加高度，使单元格更高
-            .clip(RoundedCornerShape(12.dp))
-            .background(lightGreenBg)
-            .border(
-                width = if (item.isToday) 2.dp else 0.dp,
-                color = if (item.isToday) greenColor else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
-            ),
-        contentAlignment = Alignment.TopCenter
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
     ) {
-        // 日期数字 - 全部使用绿色
-        Text(
-            text = item.date,
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Normal,
-                color = greenColor
-            ),
-            modifier = Modifier.padding(top = 8.dp)  // 略微减少顶部间距
-        )
-        
-        // 穿搭图片 - 尺寸更大，更靠上
-        item.outfitImageRes?.let { imageRes ->
-            Image(
-                painter = painterResource(id = imageRes),
-                contentDescription = "Outfit for day ${item.date}",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 26.dp, bottom = 3.dp, start = 3.dp, end = 3.dp), // 减小内边距，让图片尽可能大
-                contentScale = ContentScale.Fit
+        listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
+            Text(
+                text = day,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                style = TextStyle(fontSize = 16.sp, color = Color.Gray)
             )
         }
     }
 }
 
-data class CalendarItem(
-    val date: String,
-    val outfitImageRes: Int? = null,
-    val isToday: Boolean = false
-) 
+@Composable
+fun CalendarGrid(
+    yearMonth: YearMonth,
+    today: Int,
+    currentMonth: Int,
+    currentYear: Int,
+    wearMap: Map<LocalDate, List<Cloth>>,
+    onDayClick: (LocalDate) -> Unit,
+    greenColor: Color,
+    lightGreenBg: Color
+) {
+    val firstDay = yearMonth.atDay(1)
+    val daysInMonth = yearMonth.lengthOfMonth()
+    val dayOfWeekOffset = Calendar.getInstance().apply {
+        set(yearMonth.year, yearMonth.monthValue - 1, 1)
+    }.get(Calendar.DAY_OF_WEEK) - 1
+    val days = (1..daysInMonth).map { firstDay.withDayOfMonth(it) }
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(7),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp)
+            .height(350.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        items(dayOfWeekOffset) {
+            Box(modifier = Modifier.size(48.dp)) {}
+        }
+        items(days) { date ->
+            Column(
+                modifier = Modifier
+                    .padding(4.dp)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(lightGreenBg)
+                    .border(
+                        width = if (date.dayOfMonth == today && yearMonth.monthValue - 1 == currentMonth && yearMonth.year == currentYear) 2.dp else 0.dp,
+                        color = if (date.dayOfMonth == today && yearMonth.monthValue - 1 == currentMonth && yearMonth.year == currentYear) greenColor else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .clickable { onDayClick(date) },
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = greenColor
+                )
+                wearMap[date]?.firstOrNull()?.let {
+                    Image(
+                        painter = rememberAsyncImagePainter(it.imagePath),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
