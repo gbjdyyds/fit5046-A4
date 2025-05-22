@@ -286,35 +286,4 @@ fun ClothDetailScreen(
     }
 }
 
-@Composable
-fun InputField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorText: String,
-    greenColor: Color = Color(0xFF2E7D32),
-    lightGray: Color = Color(0xFFE0E0E0)
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(label, color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            isError = isError,
-            placeholder = { Text("Add $label") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White,
-                unfocusedBorderColor = lightGray,
-                focusedBorderColor = greenColor
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true
-        )
-        if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
-    }
-}
 

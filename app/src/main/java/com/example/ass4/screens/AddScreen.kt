@@ -1,4 +1,4 @@
-package com.example.uidesign.screens
+package com.example.ass4.screens
 
 import android.app.Application
 import android.net.Uri
