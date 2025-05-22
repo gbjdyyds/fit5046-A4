@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.uidesign.database.Cloth
 import com.example.uidesign.database.ClothType
 import com.example.uidesign.repository.ClothRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class AddClothViewModel(
@@ -22,6 +23,7 @@ class AddClothViewModel(
         fabric: String,
         imageUri: String?
     ) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val cloth = Cloth(
             uid = uid,
             name = name,

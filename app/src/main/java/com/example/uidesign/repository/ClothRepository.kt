@@ -19,8 +19,8 @@ class ClothRepository(application: Application) {
     }
 
     // get clothes by type
-    fun getClothesByType(type: String): Flow<List<Cloth>> {
-        return clothDao.getClothesByType(type)
+    fun getClothesByType(uid: String, type: String): Flow<List<Cloth>> {
+        return clothDao.getClothesByUserAndType(uid, type)
     }
     
     // get particular cloth by cloth id
@@ -46,8 +46,7 @@ class ClothRepository(application: Application) {
     fun getClothesNotWornForOneYear(uid: String): Flow<List<Cloth>> {
         return clothDao.getClothesNotWornForOneYear(uid)
     }
-    
-    // 新增：更新单个属性的方法
+
     suspend fun updateClothName(id: Int, name: String) {
         clothDao.updateClothName(id, name)
     }

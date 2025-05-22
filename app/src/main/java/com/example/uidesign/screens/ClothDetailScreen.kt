@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.uidesign.database.ClothType
 import com.example.uidesign.viewmodel.ClothDetailViewModel
@@ -35,6 +36,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClothDetailScreen(
+    navController: NavController,
     clothId: Int,
     onNavigateBack: () -> Unit,
     viewModel: ClothDetailViewModel = viewModel()

@@ -27,15 +27,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.uidesign.database.ClothType
+import com.example.uidesign.navigation.BottomNavBar
 import com.example.uidesign.viewmodel.AddClothViewModel
 import com.example.uidesign.viewmodel.AddClothViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddScreen() {
+fun AddScreen(navController: NavController) {
     val context = LocalContext.current
     val application = context.applicationContext as Application
     val viewModel: AddClothViewModel = viewModel(factory = AddClothViewModelFactory(application))
@@ -66,95 +68,7 @@ fun AddScreen() {
         topBar = {
             TopAppBar(title = { Text("Add New Item", color = greenColor) })
         },
-        bottomBar = {
-            // ✅ Bottom Navigation 硬编码实现 —— 未来可以抽出为 BottomNavBar 组件
-            BottomAppBar(
-                modifier = Modifier.height(64.dp),
-                containerColor = Color.White
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Home
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Home,
-                            contentDescription = "Home",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Home",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-
-                    // Wardrobe
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Checkroom,
-                            contentDescription = "Wardrobe",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Wardrobe",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-
-                    // Calendar
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CalendarToday,
-                            contentDescription = "Calendar",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Calendar",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        )
-                    }
-
-                    // Profile - Active
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Person,
-                            contentDescription = "Profile",
-                            tint = greenColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = "Profile",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = greenColor,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        bottomBar = { BottomNavBar(navController, selected = "add") }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -299,12 +213,17 @@ fun AddScreen() {
                             color = ""
                             fabricWeight = ""
                             imageUri = null
+                            navController.navigate("wardrobe") {
+                                popUpTo("add") { inclusive = true }
+                                launchSingleTop = true
+                            }
                         },
                         modifier = Modifier.padding(end = 12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = greenColor)
                     ) {
                         Text("Cancel", fontSize = 16.sp)
                     }
+
                     Button(
                         colors = ButtonDefaults.buttonColors(containerColor = greenColor),
                         onClick = {
@@ -341,17 +260,23 @@ fun AddScreen() {
                                 imageUri = imageUri?.toString()
                             )
 
-                            Toast.makeText(context, "Item saved successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Item saved to wardrobe", Toast.LENGTH_SHORT).show()
 
                             style = ""
                             type = ""
                             color = ""
                             fabricWeight = ""
                             imageUri = null
+
+                            navController.navigate("wardrobe") {
+                                popUpTo("add") { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     ) {
                         Text("Save Item", fontSize = 16.sp)
                     }
+
                 }
             }
         }

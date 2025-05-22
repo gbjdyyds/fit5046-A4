@@ -1,6 +1,7 @@
 package com.example.uidesign.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,262 +18,227 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.uidesign.viewmodel.LoginViewModel
 import com.example.uidesign.R
+import kotlinx.coroutines.launch
+import androidx.navigation.NavController
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    navController: NavController,
+    loginViewModel: LoginViewModel = viewModel(),
+    onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
+    onLoginSuccess: () -> Unit,
+    onGoogleSignInClick: () -> Unit
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    val loginState by loginViewModel.loginState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 响应登录状态变化
+    LaunchedEffect(loginState) {
+        when (val result = loginState) {
+            is LoginViewModel.LoginResult.Success -> onLoginSuccess()
+            is LoginViewModel.LoginResult.Failure -> snackbarHostState.showSnackbar(result.message)
+            null -> {}
+        }
+    }
+
     val greenColor = Color(0xFF2E7D32)
     val textFieldShape = RoundedCornerShape(12.dp)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.Center
-    ) {
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // Welcome Text with Icon
-        Row(
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 24.dp)
+                .padding(padding),
+            verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = Icons.Outlined.ArrowCircleRight,
-                contentDescription = "Welcome Icon",
-                tint = greenColor,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Welcome to Ecofit",
-                style = TextStyle(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = greenColor
-                )
-            )
-        }
+            Spacer(modifier = Modifier.height(40.dp))
 
-        Text(
-            text = "Sign in to your account",
-            style = TextStyle(
-                fontSize = 16.sp,
-                color = Color.Gray
-            ),
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // Email Field
-        Text(
-            text = "Email",
-            color = greenColor,
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            placeholder = { 
-                Text(
-                    "Enter your email",
-                    style = TextStyle(
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                ) 
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            shape = textFieldShape,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = greenColor,
-                unfocusedBorderColor = Color.LightGray,
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
-            ),
-            textStyle = TextStyle(fontSize = 16.sp)
-        )
-
-        // Password Field
-        Text(
-            text = "Password",
-            color = greenColor,
-            style = TextStyle(
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            placeholder = { 
-                Text(
-                    "Enter your password",
-                    style = TextStyle(
-                        color = Color.Gray,
-                        fontSize = 16.sp
-                    )
-                ) 
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = textFieldShape,
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                        tint = Color.Gray
-                    )
-                }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = greenColor,
-                unfocusedBorderColor = Color.LightGray,
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
-            ),
-            textStyle = TextStyle(fontSize = 16.sp)
-        )
-
-        // Sign In Button
-        Button(
-            onClick = { /* TODO: Handle login */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = greenColor
-            ),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                text = "Sign In",
-                style = TextStyle(
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-        }
-
-        // Forgot Password Link
-        TextButton(
-            onClick = { /* TODO: Handle forgot password */ },
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(vertical = 8.dp)
-        ) {
-            Text(
-                text = "Forgot Password?",
-                color = greenColor,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-        }
-
-        // Or Divider
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Divider(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 16.dp),
-                color = Color.LightGray
-            )
-            Text(
-                text = "or",
-                color = Color.Gray,
-                style = TextStyle(fontSize = 16.sp)
-            )
-            Divider(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp),
-                color = Color.LightGray
-            )
-        }
-
-        // Google Sign In Button
-        OutlinedButton(
-            onClick = { /* TODO: Handle Google sign in */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.Black
-            )
-        ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.google_logo),
-                    contentDescription = "Google logo",
-                    modifier = Modifier.size(24.dp)
+                Icon(
+                    imageVector = Icons.Outlined.ArrowCircleRight,
+                    contentDescription = "Welcome Icon",
+                    tint = greenColor,
+                    modifier = Modifier.size(28.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Continue with Google",
+                    text = "Welcome to Ecofit",
                     style = TextStyle(
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-            }
-        }
-
-        // Sign Up Link
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Don't have an account? ",
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    color = Color.Gray
-                )
-            )
-            TextButton(onClick = { /* TODO: Navigate to sign up */ }) {
-                Text(
-                    text = "Sign Up",
-                    style = TextStyle(
-                        fontSize = 16.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Medium,
                         color = greenColor
                     )
                 )
             }
+
+            Text(
+                text = "Sign in to your account",
+                style = TextStyle(fontSize = 16.sp, color = Color.Gray),
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            Text(
+                text = "Email",
+                color = greenColor,
+                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                placeholder = {
+                    Text("Enter your email", style = TextStyle(color = Color.Gray, fontSize = 16.sp))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp),
+                shape = textFieldShape,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = greenColor,
+                    unfocusedBorderColor = Color.LightGray,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                textStyle = TextStyle(fontSize = 16.sp)
+            )
+
+            Text(
+                text = "Password",
+                color = greenColor,
+                style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                placeholder = {
+                    Text("Enter your password", style = TextStyle(color = Color.Gray, fontSize = 16.sp))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                shape = textFieldShape,
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = "Toggle password visibility",
+                            tint = Color.Gray
+                        )
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = greenColor,
+                    unfocusedBorderColor = Color.LightGray,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                textStyle = TextStyle(fontSize = 16.sp)
+            )
+
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        if (email.isBlank() || password.isBlank()) {
+                            snackbarHostState.showSnackbar("Please enter a valid email and password")
+                        } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                            snackbarHostState.showSnackbar("Invalid email format")
+                        } else {
+                            loginViewModel.loginWithEmail(email, password)
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = greenColor),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Sign In", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            }
+
+            TextButton(
+                onClick = onNavigateToForgotPassword,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text("Forgot Password?", color = greenColor)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Divider(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp),
+                    color = Color.LightGray
+                )
+                Text("or", color = Color.Gray, style = TextStyle(fontSize = 16.sp))
+                Divider(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 16.dp),
+                    color = Color.LightGray
+                )
+            }
+
+            OutlinedButton(
+                onClick = onGoogleSignInClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.google_logo),
+                        contentDescription = "Google logo",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Continue with Google", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Don't have an account? ", color = Color.Gray)
+                TextButton(onClick = onNavigateToRegister) {
+                    Text("Sign Up", color = greenColor)
+                }
+            }
         }
     }
-} 
+}

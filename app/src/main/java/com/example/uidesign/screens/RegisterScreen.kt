@@ -1,300 +1,257 @@
 package com.example.uidesign.screens
 
+import android.app.DatePickerDialog
+import android.widget.DatePicker
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.uidesign.viewmodel.RegisterViewModel
+import kotlinx.coroutines.launch
+import java.util.*
 
+fun isValidEmail(email: String): Boolean {
+    return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
+fun isValidPassword(password: String): Boolean {
+    return password.length > 7 && password.any { it.isLetter() }
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
-    onBackClick: () -> Unit
+    navController: NavController,
+    registerViewModel: RegisterViewModel = viewModel(),
+    onBackClick: () -> Unit,
+    onRegisterSuccess: () -> Unit
 ) {
     var fullName by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     val greenColor = Color(0xFF2E7D32)
-    val textFieldShape = RoundedCornerShape(12.dp)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val registerState by registerViewModel.registerState.collectAsState()
+    val context = LocalContext.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
+    val calendar = Calendar.getInstance()
+    val datePicker = DatePickerDialog(
+        context,
+        { _: DatePicker, year: Int, month: Int, day: Int ->
+            dob = "$year-${month + 1}-$day"
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    LaunchedEffect(registerState) {
+        when (val result = registerState) {
+            is RegisterViewModel.RegisterResult.Success -> onRegisterSuccess()
+            is RegisterViewModel.RegisterResult.Failure -> snackbarHostState.showSnackbar(result.message)
+            null -> {}
+        }
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(padding)
         ) {
-            // Top Bar with back button and title - 整体上移
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 30.dp),  // 从40.dp减小到30.dp
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onBackClick,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = greenColor
-                    )
-                }
-                Text(
-                    text = "Create Account",
-                    style = TextStyle(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = greenColor
-                    ),
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
-
-            // Form fields
-            Text(
-                text = "Full Name",
-                color = greenColor,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            OutlinedTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                placeholder = { 
-                    Text(
-                        "Enter your full name",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                    ) 
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                shape = textFieldShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = greenColor,
-                    unfocusedBorderColor = Color.LightGray,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                textStyle = TextStyle(fontSize = 16.sp)
-            )
-
-            // 添加Date of Birth输入框
-            Text(
-                text = "Date of Birth",
-                color = greenColor,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            OutlinedTextField(
-                value = "",
-                onValueChange = { },
-                placeholder = { 
-                    Text(
-                        "Select your birth date",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                    ) 
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                shape = textFieldShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = greenColor,
-                    unfocusedBorderColor = Color.LightGray,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                textStyle = TextStyle(fontSize = 16.sp),
-                readOnly = true,  // 使其只读，因为将使用日期选择器
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Select date",
-                        tint = Color.Gray
-                    )
-                }
-            )
-
-            Text(
-                text = "Email",
-                color = greenColor,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                placeholder = { 
-                    Text(
-                        "Enter your email",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                    ) 
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                shape = textFieldShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = greenColor,
-                    unfocusedBorderColor = Color.LightGray,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                textStyle = TextStyle(fontSize = 16.sp)
-            )
+            Spacer(modifier = Modifier.height(24.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 24.dp)
             ) {
+                IconButton(onClick = onBackClick, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = greenColor)
+                }
                 Text(
-                    text = "Password",
-                    color = greenColor,
-                    style = TextStyle(
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-                
-                Spacer(modifier = Modifier.width(4.dp))
-                
-                Icon(
-                    imageVector = Icons.Default.Info,
-                    contentDescription = "Password guidelines",
-                    tint = greenColor,
-                    modifier = Modifier.size(16.dp)
+                    text = "Create Account",
+                    style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Medium, color = greenColor)
                 )
             }
+
+            FormLabel("Full Name", greenColor)
             OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                placeholder = { 
-                    Text(
-                        "Create a password",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                    ) 
+                value = fullName,
+                onValueChange = { fullName = it },
+                placeholder = { Text("Enter your full name", color = Color.Gray, fontSize = 16.sp) },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                textStyle = TextStyle(fontSize = 16.sp),
+                colors = fieldColors(greenColor)
+            )
+
+
+
+            FormLabel("Date of Birth", greenColor)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                OutlinedTextField(
+                    value = dob,
+                    onValueChange = {},
+                    placeholder = {
+                        Text("Select your birth date", color = Color.Gray, fontSize = 16.sp)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    readOnly = true,
+                    trailingIcon = {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color.Gray)
+                    },
+                    textStyle = TextStyle(fontSize = 16.sp),
+                    colors = fieldColors(greenColor)
+                )
+
+                // 透明点击区域盖在上面
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { datePicker.show() }
+                )
+            }
+
+            FormLabel("Email", greenColor)
+            val isEmailValid = email.isEmpty() || isValidEmail(email)
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                placeholder = {
+                    Text("Enter your email", color = Color.Gray, fontSize = 16.sp)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                shape = textFieldShape,
+                    .padding(bottom = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                textStyle = TextStyle(fontSize = 16.sp),
+                isError = !isEmailValid,
+                supportingText = {
+                    if (!isEmailValid) {
+                        Text("Please enter a valid email address", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                colors = fieldColors(greenColor)
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                Text("Password", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(Icons.Default.Info, contentDescription = null, tint = greenColor, modifier = Modifier.size(16.dp))
+            }
+            val isPasswordValid = isValidPassword(password)
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                placeholder = { Text("Create a password", color = Color.Gray, fontSize = 16.sp) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(12.dp),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null,
                             tint = Color.Gray
                         )
                     }
                 },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = greenColor,
-                    unfocusedBorderColor = Color.LightGray,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                textStyle = TextStyle(fontSize = 16.sp)
+                textStyle = TextStyle(fontSize = 16.sp),
+                isError = password.isNotEmpty() && !isPasswordValid,
+                supportingText = {
+                    if (password.isNotEmpty() && !isPasswordValid) {
+                        Text("Password must be more than 7 characters and contain at least one letter", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                colors = fieldColors(greenColor)
             )
 
-            Text(
-                text = "Confirm Password",
-                color = greenColor,
-                style = TextStyle(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            FormLabel("Confirm Password", greenColor)
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                placeholder = { 
-                    Text(
-                        "Confirm your password",
-                        style = TextStyle(
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
-                    ) 
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                shape = textFieldShape,
+                placeholder = { Text("Confirm your password", color = Color.Gray, fontSize = 16.sp) },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                shape = RoundedCornerShape(12.dp),
                 visualTransformation = PasswordVisualTransformation(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = greenColor,
-                    unfocusedBorderColor = Color.LightGray,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                textStyle = TextStyle(fontSize = 16.sp)
+                textStyle = TextStyle(fontSize = 16.sp),
+                colors = fieldColors(greenColor)
             )
 
             Button(
-                onClick = { /* TODO: Handle registration */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = greenColor
-                ),
+                onClick = {
+                    coroutineScope.launch {
+                        when {
+                            password != confirmPassword -> {
+                                snackbarHostState.showSnackbar("Passwords do not match")
+                            }
+                            password.length < 7 -> {
+                                snackbarHostState.showSnackbar("Password must be at least 7 characters long")
+                            }
+                            !password.any { it.isLetter() } -> {
+                                snackbarHostState.showSnackbar("Password must contain at least one letter")
+                            }
+                            else -> {
+                                registerViewModel.registerWithEmail(email, password)
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = greenColor),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(
-                    text = "Create Account",
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                )
+                Text("Create Account", fontSize = 18.sp, fontWeight = FontWeight.Medium)
             }
         }
     }
-} 
+}
+
+@Composable
+private fun FormLabel(text: String, color: Color) {
+    Text(
+        text = text,
+        color = color,
+        style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun fieldColors(greenColor: Color) = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = greenColor,
+    unfocusedBorderColor = Color.LightGray,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White
+)
