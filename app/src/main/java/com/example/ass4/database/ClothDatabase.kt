@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 
 @Database(
     entities = [Cloth::class, WearHistory::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -25,7 +25,9 @@ abstract class ClothDatabase : RoomDatabase() {
                     context.applicationContext,
                     ClothDatabase::class.java,
                     "cloth_database"
-                ).build()
+                ).fallbackToDestructiveMigration()
+                    .build()
+
                 INSTANCE = instance
                 instance
             }
