@@ -228,9 +228,12 @@ fun HomeScreen(navController: NavController) {
                             )
                         }
                         TextButton(
-                            // TODO: Add navigation to Wardrobe screen here in the future
-                            // onClick = { navController?.navigate("Wardrobe") },
-                            onClick = {},
+                            onClick = {
+                                navController.navigate("add") {
+                                    launchSingleTop = true
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                }
+                            },
                             contentPadding = PaddingValues(0.dp)
                         ) {
                             Text("Add", color = greenColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
