@@ -16,10 +16,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,9 +29,7 @@ import com.example.uidesign.database.Cloth
 import com.example.uidesign.viewmodel.WardrobeViewModel
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
-import com.example.uidesign.database.ClothType
 import com.example.uidesign.navigation.BottomNavBar
 import com.google.firebase.auth.FirebaseAuth
 
@@ -47,8 +43,6 @@ fun WardrobeScreen(
 ) {
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
-    val redColor = Color(0xFFE53935)
-    val context = LocalContext.current
     
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -169,7 +163,7 @@ fun ClothCard(
                     painter = rememberAsyncImagePainter(cloth.imagePath),
                     contentDescription = cloth.name,
                     modifier = Modifier.fillMaxSize(),
-                    ccaontentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop
                 )
 
                 
