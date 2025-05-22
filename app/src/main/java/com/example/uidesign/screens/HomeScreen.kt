@@ -1,260 +1,437 @@
 package com.example.uidesign.screens
 
-import androidx.compose.foundation.Canvas
+import android.app.Application
+import android.Manifest
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.uidesign.R
+import com.example.uidesign.database.Cloth
+import com.example.uidesign.database.ClothType
+import com.example.uidesign.viewmodel.HomeViewModel
+import com.example.uidesign.viewmodel.HomeViewModelFactory
+import coil.compose.AsyncImage
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.launch
+import androidx.navigation.NavController
 import com.example.uidesign.navigation.BottomNavBar
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val greenColor = Color(0xFF2E7D32)
-    val lightGreenBg = Color(0xFFF1F8E9)
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(application))
+    val weatherState = viewModel.weather.collectAsState().value
+    val userName by viewModel.userName.collectAsState()
+    val isTipsExpanded by viewModel.isTipsExpanded.collectAsState()
+    val capList by viewModel.capList.collectAsState()
+    val topList by viewModel.topList.collectAsState()
+    val bottomList by viewModel.bottomList.collectAsState()
+    val shoesList by viewModel.shoesList.collectAsState()
+    val selectedCap by viewModel.selectedCap.collectAsState()
+    val selectedTop by viewModel.selectedTop.collectAsState()
+    val selectedBottom by viewModel.selectedBottom.collectAsState()
+    val selectedShoes by viewModel.selectedShoes.collectAsState()
 
+    var showSelector by remember { mutableStateOf<ClothType?>(null) }
+
+    val greenColor = Color(0xFF2E7D32)
+    val yellowColor = Color(0xFFFFF59D)
+    val orangeColor = Color(0xFFFFA726)
+
+    // 权限 launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            if (granted) {
+                getLocationAndFetchWeather(context, viewModel)
+            } else {
+                // fallback: 墨尔本
+                viewModel.fetchWeatherByLocation(-37.8136, 144.9631)
+            }
+        }
+    )
+
+    // 首次进入时请求权限
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    // Prepare weather icon URL from OpenWeather API (if available)
+    val iconUrl: String? = weatherState?.weather?.firstOrNull()?.icon?.let { "https://openweathermap.org/img/wn/${it}@2x.png" }
+    val tipsText = if (weatherState != null) {
+        viewModel.getClothingTips(weatherState.main.temp, weatherState.weather.firstOrNull()?.main ?: "")
+    } else {
+        "T-shirt, Jeans, Long pants"
+    }
+    LaunchedEffect(weatherState) {
+        android.util.Log.d("WeatherDebug", "UI shows temp: ${weatherState?.main?.temp}")
+    }
     Scaffold(
         bottomBar = { BottomNavBar(navController, selected = "home") }
     ) { paddingValues ->
-        Box(
+        // Check if wardrobe is empty
+        val isWardrobeEmpty = capList.isEmpty() && topList.isEmpty() && bottomList.isEmpty() && shoesList.isEmpty()
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
+                .background(Color.White)
+                .padding(top = paddingValues.calculateTopPadding()),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn(
+            // Move the top section down for better centering
+            Spacer(modifier = Modifier.height(32.dp))
+            // Top section: Welcome, weather, and tips in a horizontal layout
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                // 顶部空白，下移内容
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-                
-                // Weather Card
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = lightGreenBg
-                        ),
-                        shape = RoundedCornerShape(16.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    // Welcome and weather info (left)
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.align(Alignment.CenterStart)
-                            ) {
-                                Text(
-                                    text = "Today's Weather",
-                                    style = TextStyle(
-                                        fontSize = 24.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = greenColor
-                                    )
+                        Text(
+                            "Welcome, $userName!",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 26.sp,
+                            color = greenColor,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (iconUrl != null) {
+                                AsyncImage(
+                                    model = iconUrl,
+                                    contentDescription = weatherState?.weather?.firstOrNull()?.main,
+                                    modifier = Modifier.size(36.dp)
                                 )
-                                
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = "Sunny • 20°C",
-                                        style = TextStyle(
-                                            fontSize = 18.sp,
-                                            color = greenColor
-                                        )
-                                    )
-                                }
-                                
-                                Text(
-                                    text = "Perfect weather for light layers!",
-                                    style = TextStyle(
-                                        fontSize = 16.sp,
-                                        color = greenColor
-                                    )
-                                )
+                                Spacer(Modifier.width(8.dp))
                             }
-                            
-                            // Custom loading indicator with shorter and thicker lines
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .align(Alignment.TopEnd)
-                            ) {
-                                Canvas(modifier = Modifier.size(42.dp)) {
-                                    val center = Offset(size.width / 2, size.height / 2)
-                                    val outerRadius = size.width / 2
-                                    // 增加内圆半径，使线条更短
-                                    val innerRadius = size.width / 3
-                                    
-                                    // Draw 8 radiating lines
-                                    for (i in 0 until 8) {
-                                        val angle = Math.PI / 4 * i
-                                        val startX = center.x + innerRadius * kotlin.math.cos(angle).toFloat()
-                                        val startY = center.y + innerRadius * kotlin.math.sin(angle).toFloat()
-                                        val endX = center.x + outerRadius * kotlin.math.cos(angle).toFloat()
-                                        val endY = center.y + outerRadius * kotlin.math.sin(angle).toFloat()
-                                        
-                                        // 移除透明度差异，所有线条同样粗细和透明度
-                                        drawLine(
-                                            color = greenColor.copy(alpha = 0.8f),
-                                            start = Offset(startX, startY),
-                                            end = Offset(endX, endY),
-                                            // 进一步增加线条宽度
-                                            strokeWidth = 6f,
-                                            cap = StrokeCap.Round
-                                        )
-                                    }
-                                }
-                            }
+                            Text(
+                                text = weatherState?.let { "${it.weather.firstOrNull()?.main ?: "-"} · ${it.main.temp.toInt()}°C" } ?: "--",
+                                color = greenColor,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
-                }
-                
-                // Recommended Outfits Title
-                item {
-                    Text(
-                        text = "Recommended Outfits",
-                        style = TextStyle(
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = greenColor
-                        ),
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-                
-                // Outfit Card
-                item {
+                    Spacer(Modifier.width(8.dp))
+                    // Tips card (right, smaller width)
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(620.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(16.dp)
+                            .width(120.dp)
+                            .height(if (isTipsExpanded) 100.dp else 50.dp)
+                            .padding(start = 4.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        border = BorderStroke(2.dp, yellowColor)
                     ) {
-                        // 整体布局容器
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 4.dp),
-                            contentAlignment = Alignment.Center
+                                .clickable { viewModel.toggleTips() }
+                                .padding(10.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // 模特与衣服居中显示
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(0.9f)
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = 4.dp, bottom = 30.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                // 缩小服装图片尺寸
-                                Image(
-                                    painter = painterResource(id = R.drawable.suit_pic),
-                                    contentDescription = "Outfit",
-                                    modifier = Modifier
-                                        .fillMaxHeight(0.78f)  // 减小高度比例
-                                        .fillMaxWidth(0.8f),   // 减小宽度比例
-                                    contentScale = ContentScale.Fit
-                                )
-                            }
-                            
-                            // 左侧箭头 - 上移到人物中间位置
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight(0.6f) // 减小高度，使箭头上移
-                                    .width(48.dp)
-                                    .align(Alignment.CenterStart)
-                                    .offset(y = (-40).dp), // 向上偏移
-                                contentAlignment = Alignment.Center
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Tips", color = orangeColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Icon(
-                                    imageVector = Icons.Filled.KeyboardArrowLeft,
-                                    contentDescription = "Previous outfit",
-                                    tint = greenColor,
-                                    modifier = Modifier.size(48.dp)
+                                    imageVector = if (isTipsExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                                    contentDescription = "Expand/Collapse",
+                                    tint = orangeColor,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                            
-                            // 右侧箭头 - 上移到人物中间位置
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight(0.6f) // 减小高度，使箭头上移 
-                                    .width(48.dp)
-                                    .align(Alignment.CenterEnd)
-                                    .offset(y = (-40).dp), // 向上偏移
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.KeyboardArrowRight,
-                                    contentDescription = "Next outfit",
-                                    tint = greenColor,
-                                    modifier = Modifier.size(48.dp)
+                            if (isTipsExpanded) {
+                                Text(
+                                    text = tipsText,
+                                    color = Color(0xFF8C8D63),
+                                    fontSize = 13.sp,
+                                    maxLines = 4,
+                                    lineHeight = 18.sp
                                 )
-                            }
-                            
-                            // 底部衣橱图标 - 调整位置不挡住脚部
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .padding(bottom = 80.dp) // 减少底部间距，让图标下移一点
-                            ) {
-                                FloatingActionButton(
-                                    onClick = { /* TODO: Open wardrobe */ },
-                                    containerColor = greenColor,
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.size(56.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Checkroom,
-                                        contentDescription = "Wardrobe",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(28.dp)
-                                    )
-                                }
                             }
                         }
                     }
                 }
-                
-                // Add some space at the bottom
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            // Compact add clothes banner
+            if (isWardrobeEmpty) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = "Info",
+                                tint = greenColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Your wardrobe is empty. Please add clothes.",
+                                color = greenColor,
+                                fontSize = 14.sp
+                            )
+                        }
+                        TextButton(
+                            // TODO: Add navigation to Wardrobe screen here in the future
+                            // onClick = { navController?.navigate("Wardrobe") },
+                            onClick = {},
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Add", color = greenColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Four-grid selector with compact Select/Clear buttons
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                FourGridSelector(
+                    capList, selectedCap, R.drawable.baseball_cap, { showSelector = ClothType.CAP }, { viewModel.clearCloth(ClothType.CAP) },
+                    topList, selectedTop, R.drawable.shirt, { showSelector = ClothType.TOP }, { viewModel.clearCloth(ClothType.TOP) },
+                    bottomList, selectedBottom, R.drawable.pants, { showSelector = ClothType.BOTTOM }, { viewModel.clearCloth(ClothType.BOTTOM) },
+                    shoesList, selectedShoes, R.drawable.shoes, { showSelector = ClothType.SHOES }, { viewModel.clearCloth(ClothType.SHOES) }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { viewModel.confirmOutfit() },
+                    colors = ButtonDefaults.buttonColors(containerColor = greenColor),
+                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier
+                        .width(200.dp)
+                        .height(56.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Text(
+                        text = "Confirm",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Dialog for selecting clothes
+            when (showSelector) {
+                ClothType.CAP -> {
+                    SelectClothDialog("Select Cap", capList, onSelect = {
+                        viewModel.selectCloth(ClothType.CAP, it)
+                        showSelector = null
+                    }, onDismiss = { showSelector = null })
+                }
+                ClothType.TOP -> {
+                    SelectClothDialog("Select Top", topList, onSelect = {
+                        viewModel.selectCloth(ClothType.TOP, it)
+                        showSelector = null
+                    }, onDismiss = { showSelector = null })
+                }
+                ClothType.BOTTOM -> {
+                    SelectClothDialog("Select Bottom", bottomList, onSelect = {
+                        viewModel.selectCloth(ClothType.BOTTOM, it)
+                        showSelector = null
+                    }, onDismiss = { showSelector = null })
+                }
+                ClothType.SHOES -> {
+                    SelectClothDialog("Select Shoes", shoesList, onSelect = {
+                        viewModel.selectCloth(ClothType.SHOES, it)
+                        showSelector = null
+                    }, onDismiss = { showSelector = null })
+                }
+                null -> {}
+            }
+        }
+    }
+}
+
+fun getLocationAndFetchWeather(context: Context, viewModel: HomeViewModel) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    try {
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if (location != null) {
+                viewModel.fetchWeatherByLocation(location.latitude, location.longitude)
+            } else {
+                viewModel.fetchWeatherByLocation(-37.8136, 144.9631)
+            }
+        }
+    } catch (e: SecurityException) {
+        viewModel.fetchWeatherByLocation(-37.8136, 144.9631)
+    }
+}
+
+@Composable
+fun FourGridSelector(
+    capList: List<Cloth>, selectedCap: Cloth?, capIcon: Int, onCapSelect: () -> Unit, onCapClear: () -> Unit,
+    topList: List<Cloth>, selectedTop: Cloth?, topIcon: Int, onTopSelect: () -> Unit, onTopClear: () -> Unit,
+    bottomList: List<Cloth>, selectedBottom: Cloth?, bottomIcon: Int, onBottomSelect: () -> Unit, onBottomClear: () -> Unit,
+    shoesList: List<Cloth>, selectedShoes: Cloth?, shoesIcon: Int, onShoesSelect: () -> Unit, onShoesClear: () -> Unit
+) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        SelectGridItem(capIcon, "Cap", selectedCap, onCapSelect, onCapClear)
+        SelectGridItem(topIcon, "Top", selectedTop, onTopSelect, onTopClear)
+    }
+    Spacer(modifier = Modifier.height(18.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        SelectGridItem(bottomIcon, "Bottom", selectedBottom, onBottomSelect, onBottomClear)
+        SelectGridItem(shoesIcon, "Shoes", selectedShoes, onShoesSelect, onShoesClear)
+    }
+}
+
+@Composable
+fun SelectGridItem(
+    iconRes: Int,
+    label: String,
+    selectedItem: Cloth?,
+    onSelect: () -> Unit,
+    onClear: () -> Unit
+) {
+    val greenColor = Color(0xFF2E7D32)
+    Box(
+        modifier = Modifier
+            .size(190.dp)
+            .border(2.dp, greenColor, RoundedCornerShape(20.dp))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = label,
+                tint = greenColor,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            if (selectedItem != null) {
+                Text(selectedItem.name, fontSize = 15.sp, color = greenColor)
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(
+                    onClick = onSelect,
+                    colors = ButtonDefaults.buttonColors(containerColor = greenColor),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .height(40.dp)
+                        .weight(1f),
+                    contentPadding = PaddingValues(horizontal = 0.dp)
+                ) {
+                    Text("Select", color = Color.White, fontSize = 13.sp, maxLines = 1)
+                }
+                Button(
+                    onClick = onClear,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .height(40.dp)
+                        .weight(1f),
+                    border = ButtonDefaults.outlinedButtonBorder,
+                    contentPadding = PaddingValues(horizontal = 0.dp)
+                ) {
+                    Text("Clear", color = greenColor, fontSize = 13.sp, maxLines = 1)
                 }
             }
         }
     }
-} 
+}
+
+@Composable
+fun SelectClothDialog(
+    title: String,
+    items: List<Cloth>,
+    onSelect: (Cloth) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                items.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(item) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.outfit_dress), // 你可以用 item.imagePath 做图片
+                            contentDescription = item.name,
+                            modifier = Modifier.size(56.dp)
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(item.name, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
