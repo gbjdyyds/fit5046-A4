@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.uidesign"
+    namespace = "com.example.ass4"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.uidesign"
+        applicationId = "com.example.ass4"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -72,6 +74,15 @@ dependencies {
 
     // Image Loading (Coil)
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    implementation ("androidx.navigation:navigation-compose:2.7.3")
+
+    // retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // Testing
     testImplementation(libs.junit)

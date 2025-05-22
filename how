@@ -1,0 +1,25 @@
+[33mcommit 40c07ce5bfa51e4eab008b1a3c619a86be17020e[m[33m ([m[1;36mHEAD -> [m[1;32myujie_database[m[33m)[m
+Author: LianzhengXie <113651877+LianzhengXie@users.noreply.github.com>
+Date:   Wed May 21 22:44:08 2025 +0800
+
+    merge zlii分支,login&register,updatenavigation
+
+ .idea/vcs.xml                                      |   1 [31m-[m
+ app/build.gradle.kts                               |   5 [32m+[m
+ .../main/java/com/example/uidesign/MainActivity.kt |  26 [32m+[m[31m-[m
+ .../com/example/uidesign/navigation/AppNavGraph.kt |  68 [32m++++[m
+ .../example/uidesign/navigation/BottomNavBar.kt    |  89 [32m+++++[m
+ .../java/com/example/uidesign/screens/AddScreen.kt | 107 [32m+[m[31m-----[m
+ .../com/example/uidesign/screens/CalendarScreen.kt |  93 [32m+[m[31m----[m
+ .../example/uidesign/screens/ClothDetailScreen.kt  |   2 [32m+[m
+ .../example/uidesign/screens/EditProfileScreen.kt  | 105 [32m++++++[m
+ .../uidesign/screens/ForgotPasswordScreen.kt       |  99 [32m+++++[m
+ .../com/example/uidesign/screens/HomeScreen.kt     |  93 [32m+[m[31m----[m
+ .../com/example/uidesign/screens/LoginScreen.kt    | 400 [32m++++++++++[m[31m-----------[m
+ .../com/example/uidesign/screens/ProfileScreen.kt  |  43 [32m+[m[31m--[m
+ .../com/example/uidesign/screens/RegisterScreen.kt | 389 [32m+++++++++[m[31m-----------[m
+ .../com/example/uidesign/screens/WardrobeScreen.kt | 103 [32m+[m[31m-----[m
+ .../uidesign/viewmodel/ForgotPasswordViewModel.kt  |  32 [32m++[m
+ .../example/uidesign/viewmodel/LoginViewModel.kt   |  43 [32m+++[m
+ .../uidesign/viewmodel/RegisterViewModel.kt        |  29 [32m++[m
+ 18 files changed, 894 insertions(+), 833 deletions(-)
