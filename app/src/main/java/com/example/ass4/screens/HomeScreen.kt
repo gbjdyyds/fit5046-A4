@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import com.example.ass4.navigation.BottomNavBar
 import androidx.compose.foundation.BorderStroke
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +72,7 @@ fun HomeScreen(navController: NavController) {
             if (granted) {
                 getLocationAndFetchWeather(context, viewModel)
             } else {
-                // fallback: 墨尔本
+                // fallback: melbourne
                 viewModel.fetchWeatherByLocation(-37.8136, 144.9631)
             }
         }
@@ -237,7 +238,7 @@ fun HomeScreen(navController: NavController) {
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             // Four-grid selector with compact Select/Clear buttons
             Column(
@@ -254,9 +255,22 @@ fun HomeScreen(navController: NavController) {
                     bottomList, selectedBottom, R.drawable.pants, { showSelector = ClothType.BOTTOM }, { viewModel.clearCloth(ClothType.BOTTOM) },
                     shoesList, selectedShoes, R.drawable.shoes, { showSelector = ClothType.SHOES }, { viewModel.clearCloth(ClothType.SHOES) }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 Button(
-                    onClick = { viewModel.confirmOutfit() },
+                    onClick = {
+                        val hasSelected = selectedCap != null || selectedTop != null || selectedBottom != null || selectedShoes != null
+                        if (!hasSelected) {
+                            Toast.makeText(context, "Please select at least one item!", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        viewModel.confirmOutfit()
+                        Toast.makeText(context, "Outfit saved!", Toast.LENGTH_SHORT).show()
+                        // 清空所有选择
+                        viewModel.clearCloth(ClothType.CAP)
+                        viewModel.clearCloth(ClothType.TOP)
+                        viewModel.clearCloth(ClothType.BOTTOM)
+                        viewModel.clearCloth(ClothType.SHOES)
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = greenColor),
                     shape = RoundedCornerShape(32.dp),
                     modifier = Modifier
@@ -355,16 +369,21 @@ fun SelectGridItem(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = label,
-                tint = greenColor,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(Modifier.height(12.dp))
-            if (selectedItem != null) {
-                Text(selectedItem.name, fontSize = 15.sp, color = greenColor)
+            if (selectedItem?.imagePath != null && selectedItem.imagePath.isNotBlank()) {
+                AsyncImage(
+                    model = selectedItem.imagePath,
+                    contentDescription = label,
+                    modifier = Modifier.size(72.dp)
+                )
+            } else {
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = label,
+                    tint = greenColor,
+                    modifier = Modifier.size(56.dp)
+                )
             }
+            Spacer(Modifier.height(12.dp))
             Spacer(Modifier.height(12.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -418,11 +437,19 @@ fun SelectClothDialog(
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.outfit_dress), // 你可以用 item.imagePath 做图片
-                            contentDescription = item.name,
-                            modifier = Modifier.size(56.dp)
-                        )
+                        if (item.imagePath != null && item.imagePath.isNotBlank()) {
+                            AsyncImage(
+                                model = item.imagePath,
+                                contentDescription = item.name,
+                                modifier = Modifier.size(72.dp)
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(id = R.drawable.shirt),
+                                contentDescription = item.name,
+                                modifier = Modifier.size(56.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(item.name, fontWeight = FontWeight.Medium)
                     }
