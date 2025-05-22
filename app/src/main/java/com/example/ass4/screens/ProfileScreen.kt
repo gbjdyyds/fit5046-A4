@@ -32,6 +32,7 @@ import androidx.navigation.NavController
 import com.example.ass4.navigation.BottomNavBar
 import com.example.ass4.database.MonthlyRepeatReusage
 import com.example.ass4.viewmodel.ProfileViewModel
+import com.google.firebase.auth.FirebaseAuth
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -91,7 +92,10 @@ fun ProfileScreen(navController: NavController) {
             item {
                 Spacer(modifier = Modifier.height(32.dp))
                 SignOutButton(subtleRed, onClick = {
-                    Toast.makeText(context, "Signed out (simulated)", Toast.LENGTH_SHORT).show()
+                    FirebaseAuth.getInstance().signOut()
+                    navController.navigate("login") {
+                        popUpTo("profile") { inclusive = true }
+                    }
                 })
             }
         }

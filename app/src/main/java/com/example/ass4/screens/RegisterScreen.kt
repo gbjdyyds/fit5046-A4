@@ -223,7 +223,7 @@ fun RegisterScreen(
                                 snackbarHostState.showSnackbar("Password must contain at least one letter")
                             }
                             else -> {
-                                registerViewModel.registerWithEmail(email, password)
+                                registerViewModel.registerWithEmail(fullName, email, password)
                             }
                         }
                     }

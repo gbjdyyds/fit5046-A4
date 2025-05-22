@@ -10,11 +10,18 @@ class RegisterViewModel : ViewModel() {
     private val _registerState = MutableStateFlow<RegisterResult?>(null)
     val registerState = _registerState.asStateFlow()
 
-    fun registerWithEmail(email: String, password: String) {
+    fun registerWithEmail(fullName: String, email: String, password: String) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    _registerState.value = RegisterResult.Success
+                    val user = auth.currentUser
+                    val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                        .setDisplayName(fullName)
+                        .build()
+
+                    user?.updateProfile(profileUpdates)?.addOnCompleteListener {
+                        _registerState.value = RegisterResult.Success
+                    }
                 } else {
                     _registerState.value =
                         RegisterResult.Failure(task.exception?.message ?: "Registration failed")

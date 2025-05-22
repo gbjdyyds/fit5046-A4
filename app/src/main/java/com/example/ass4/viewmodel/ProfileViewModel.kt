@@ -25,17 +25,21 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val uid = _uid.asStateFlow()
 
     private val user = FirebaseAuth.getInstance().currentUser
-//    private val _userName = MutableStateFlow(user?.displayName ?: "No Name")
-//    private val _email = MutableStateFlow(user?.email ?: "No Email")
-
-
-    private val _userName = MutableStateFlow("Sarah Chen")
+    private val _userName = MutableStateFlow(user?.displayName ?: "No Name")
     val userName: StateFlow<String> = _userName
 
-    private val _email = MutableStateFlow("sarah.chen@gmail.com")
+    private val _email = MutableStateFlow(user?.email ?: "No Email")
     val email: StateFlow<String> = _email
 
-    private val _createdAt = MutableStateFlow(System.currentTimeMillis() - 100L * 24 * 60 * 60 * 1000) // 100 days ago
+
+//    private val _userName = MutableStateFlow("Sarah Chen")
+//    val userName: StateFlow<String> = _userName
+//
+//    private val _email = MutableStateFlow("sarah.chen@gmail.com")
+//    val email: StateFlow<String> = _email
+
+//    private val _createdAt = MutableStateFlow(System.currentTimeMillis() - 100L * 24 * 60 * 60 * 1000) // 100 days ago
+    private val _createdAt = MutableStateFlow(System.currentTimeMillis())
     val createdAt: StateFlow<Long> = _createdAt
 
     private val _totalClothes = MutableStateFlow(0)
@@ -107,8 +111,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
                 val lastAdded = clothes.maxByOrNull { it.createdAt ?: 0L }?.createdAt ?: System.currentTimeMillis()
                 val diff = System.currentTimeMillis() - lastAdded
-                val days = (diff / (1000 * 60 * 60 * 24)).toInt()
-                _noShoppingDays.value = days
+                _noShoppingDays.value = (diff / (1000 * 60 * 60 * 24)).toInt()
+
+                val earliest = clothes.minByOrNull { it.createdAt ?: System.currentTimeMillis() }?.createdAt
+                if (earliest != null) _createdAt.value = earliest
             }
         }
     }
