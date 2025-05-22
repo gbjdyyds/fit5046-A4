@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "UIDesign"
+rootProject.name = "ass4"
 include(":app")
