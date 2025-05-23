@@ -35,11 +35,17 @@ import com.example.ass4.viewmodel.HomeViewModel
 import com.example.ass4.viewmodel.HomeViewModelFactory
 import coil.compose.AsyncImage
 import com.google.android.gms.location.LocationServices
-import kotlinx.coroutines.launch
 import androidx.navigation.NavController
 import com.example.ass4.navigation.BottomNavBar
 import androidx.compose.foundation.BorderStroke
 import android.widget.Toast
+import androidx.work.PeriodicWorkRequestBuilder
+import com.example.ass4.work.AchievementReminderWorker
+import androidx.compose.animation.*
+
+import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,17 +66,29 @@ fun HomeScreen(navController: NavController) {
     val selectedShoes by viewModel.selectedShoes.collectAsState()
 
     var showSelector by remember { mutableStateOf<ClothType?>(null) }
+    var showBanner by remember { mutableStateOf(false) }
 
     val greenColor = Color(0xFF2E7D32)
     val yellowColor = Color(0xFFFFF59D)
     val orangeColor = Color(0xFFFFA726)
 
-    // 权限 launcher
+    // Only check achievement reminder after permission is granted
+    fun checkAndShowAchievementBanner() {
+        val prefs = context.getSharedPreferences("reminder", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("show_achievement_reminder", false)) {
+            showBanner = true
+            prefs.edit().putBoolean("show_achievement_reminder", false).apply()
+        }
+    }
+
+    // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { granted ->
             if (granted) {
                 getLocationAndFetchWeather(context, viewModel)
+                // Only check achievement banner after permission is granted
+                checkAndShowAchievementBanner()
             } else {
                 // fallback: melbourne
                 viewModel.fetchWeatherByLocation(-37.8136, 144.9631)
@@ -78,9 +96,22 @@ fun HomeScreen(navController: NavController) {
         }
     )
 
-    // 首次进入时请求权限
+    // First time request permission
     LaunchedEffect(Unit) {
+        // Force show Banner for instructor testing
+        val prefs = context.getSharedPreferences("reminder", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("show_achievement_reminder", true).apply()
         permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    // Start WorkManager periodic task (check every day)
+    LaunchedEffect(Unit) {
+        val workRequest = PeriodicWorkRequestBuilder<AchievementReminderWorker>(1, java.util.concurrent.TimeUnit.DAYS).build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            "achievement_reminder",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 
     // Prepare weather icon URL from OpenWeather API (if available)
@@ -93,230 +124,280 @@ fun HomeScreen(navController: NavController) {
     LaunchedEffect(weatherState) {
         android.util.Log.d("WeatherDebug", "UI shows temp: ${weatherState?.main?.temp}")
     }
-    Scaffold(
-        bottomBar = { BottomNavBar(navController, selected = "home") }
-    ) { paddingValues ->
-        // Check if wardrobe is empty
-        val isWardrobeEmpty = capList.isEmpty() && topList.isEmpty() && bottomList.isEmpty() && shoesList.isEmpty()
-        Column(
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Top floating Banner
+        AnimatedVisibility(
+            visible = showBanner,
+            enter = slideIn(initialOffset = { IntOffset(0, -it.height) }) + fadeIn(),
+            exit = slideOut(targetOffset = { IntOffset(0, -it.height) }) + fadeOut(),
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(top = paddingValues.calculateTopPadding()),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .align(Alignment.TopCenter)
+                .padding(top = 32.dp) // Offset downward to avoid camera cutout
+                .zIndex(1f)  // Ensure Banner is on top
         ) {
-            // Move the top section down for better centering
-            Spacer(modifier = Modifier.height(32.dp))
-            // Top section: Welcome, weather, and tips in a horizontal layout
+            LaunchedEffect(Unit) {
+                delay(8000) // Auto dismiss after 8 seconds
+                showBanner = false
+            }
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.Top
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Welcome and weather info (left)
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            "Welcome, $userName!",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 26.sp,
-                            color = greenColor,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (iconUrl != null) {
-                                AsyncImage(
-                                    model = iconUrl,
-                                    contentDescription = weatherState?.weather?.firstOrNull()?.main,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                            }
-                            Text(
-                                text = weatherState?.let { "${it.weather.firstOrNull()?.main ?: "-"} · ${it.main.temp.toInt()}°C" } ?: "--",
-                                color = greenColor,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    // Tips card (right, smaller width)
-                    Card(
-                        modifier = Modifier
-                            .width(120.dp)
-                            .height(if (isTipsExpanded) 100.dp else 50.dp)
-                            .padding(start = 4.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        border = BorderStroke(2.dp, yellowColor)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable { viewModel.toggleTips() }
-                                .padding(10.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Tips", color = orangeColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Icon(
-                                    imageVector = if (isTipsExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
-                                    contentDescription = "Expand/Collapse",
-                                    tint = orangeColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            if (isTipsExpanded) {
-                                Text(
-                                    text = tipsText,
-                                    color = Color(0xFF8C8D63),
-                                    fontSize = 13.sp,
-                                    maxLines = 4,
-                                    lineHeight = 18.sp
-                                )
-                            }
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Outlined.EmojiEvents,
+                        contentDescription = "Achievement",
+                        tint = Color(0xFF2E7D32),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        "Hey, it's a new day! New chances—let's unlock those achievements together! 🚀",
+                        color = Color(0xFF2E7D32),
+                        fontWeight = FontWeight.Medium,
+                        style = TextStyle(fontSize = 16.sp)
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            // Compact add clothes banner
-            if (isWardrobeEmpty) {
+        }
+
+        // Main content Scaffold
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            bottomBar = { BottomNavBar(navController, selected = "home") }
+        ) { paddingValues ->
+            // Check if wardrobe is empty
+            val isWardrobeEmpty = capList.isEmpty() && topList.isEmpty() && bottomList.isEmpty() && shoesList.isEmpty()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(top = paddingValues.calculateTopPadding()),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Move the top section down for better centering
+                Spacer(modifier = Modifier.height(32.dp))
+                // Top section: Welcome, weather, and tips in a horizontal layout
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        .padding(horizontal = 20.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Outlined.Info,
-                                contentDescription = "Info",
-                                tint = greenColor,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                "Your wardrobe is empty. Please add clothes.",
-                                color = greenColor,
-                                fontSize = 14.sp
-                            )
-                        }
-                        TextButton(
-                            onClick = {
-                                navController.navigate("add") {
-                                    launchSingleTop = true
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                }
-                            },
-                            contentPadding = PaddingValues(0.dp)
+                        // Welcome and weather info (left)
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Text("Add", color = greenColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                "Welcome, $userName!",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 26.sp,
+                                color = greenColor,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (iconUrl != null) {
+                                    AsyncImage(
+                                        model = iconUrl,
+                                        contentDescription = weatherState?.weather?.firstOrNull()?.main,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                Text(
+                                    text = weatherState?.let { "${it.weather.firstOrNull()?.main ?: "-"} · ${it.main.temp.toInt()}°C" } ?: "--",
+                                    color = greenColor,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        // Tips card (right, smaller width)
+                        Card(
+                            modifier = Modifier
+                                .width(120.dp)
+                                .height(if (isTipsExpanded) 100.dp else 50.dp)
+                                .padding(start = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = BorderStroke(2.dp, yellowColor)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { viewModel.toggleTips() }
+                                    .padding(10.dp),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Tips", color = orangeColor, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    Icon(
+                                        imageVector = if (isTipsExpanded) Icons.Outlined.KeyboardArrowUp else Icons.Outlined.KeyboardArrowDown,
+                                        contentDescription = "Expand/Collapse",
+                                        tint = orangeColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                if (isTipsExpanded) {
+                                    Text(
+                                        text = tipsText,
+                                        color = Color(0xFF8C8D63),
+                                        fontSize = 13.sp,
+                                        maxLines = 4,
+                                        lineHeight = 18.sp
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // Four-grid selector with compact Select/Clear buttons
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-                FourGridSelector(
-                    capList, selectedCap, R.drawable.baseball_cap, { showSelector = ClothType.CAP }, { viewModel.clearCloth(ClothType.CAP) },
-                    topList, selectedTop, R.drawable.shirt, { showSelector = ClothType.TOP }, { viewModel.clearCloth(ClothType.TOP) },
-                    bottomList, selectedBottom, R.drawable.pants, { showSelector = ClothType.BOTTOM }, { viewModel.clearCloth(ClothType.BOTTOM) },
-                    shoesList, selectedShoes, R.drawable.shoes, { showSelector = ClothType.SHOES }, { viewModel.clearCloth(ClothType.SHOES) }
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        val hasSelected = selectedCap != null || selectedTop != null || selectedBottom != null || selectedShoes != null
-                        if (!hasSelected) {
-                            Toast.makeText(context, "Please select at least one item!", Toast.LENGTH_SHORT).show()
-                            return@Button
+                Spacer(modifier = Modifier.height(16.dp))
+                // Compact add clothes banner
+                if (isWardrobeEmpty) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "Info",
+                                    tint = greenColor,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Your wardrobe is empty. Please add clothes.",
+                                    color = greenColor,
+                                    fontSize = 14.sp
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    navController.navigate("add") {
+                                        launchSingleTop = true
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                    }
+                                },
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text("Add", color = greenColor, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
                         }
-                        viewModel.confirmOutfit()
-                        Toast.makeText(context, "Outfit saved!", Toast.LENGTH_SHORT).show()
-                        // 清空所有选择
-                        viewModel.clearCloth(ClothType.CAP)
-                        viewModel.clearCloth(ClothType.TOP)
-                        viewModel.clearCloth(ClothType.BOTTOM)
-                        viewModel.clearCloth(ClothType.SHOES)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = greenColor),
-                    shape = RoundedCornerShape(32.dp),
-                    modifier = Modifier
-                        .width(200.dp)
-                        .height(56.dp)
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    Text(
-                        text = "Confirm",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    }
                 }
-            }
+                Spacer(modifier = Modifier.height(30.dp))
 
-            // Dialog for selecting clothes
-            when (showSelector) {
-                ClothType.CAP -> {
-                    SelectClothDialog("Select Cap", capList, onSelect = {
-                        viewModel.selectCloth(ClothType.CAP, it)
-                        showSelector = null
-                    }, onDismiss = { showSelector = null })
+                // Four-grid selector with compact Select/Clear buttons
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FourGridSelector(
+                        capList, selectedCap, R.drawable.baseball_cap, { showSelector = ClothType.CAP }, { viewModel.clearCloth(ClothType.CAP) },
+                        topList, selectedTop, R.drawable.shirt, { showSelector = ClothType.TOP }, { viewModel.clearCloth(ClothType.TOP) },
+                        bottomList, selectedBottom, R.drawable.pants, { showSelector = ClothType.BOTTOM }, { viewModel.clearCloth(ClothType.BOTTOM) },
+                        shoesList, selectedShoes, R.drawable.shoes, { showSelector = ClothType.SHOES }, { viewModel.clearCloth(ClothType.SHOES) }
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            val hasSelected = selectedCap != null || selectedTop != null || selectedBottom != null || selectedShoes != null
+                            if (!hasSelected) {
+                                Toast.makeText(context, "Please select at least one item!", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            viewModel.confirmOutfit()
+                            Toast.makeText(context, "Outfit saved!", Toast.LENGTH_SHORT).show()
+                            // Clear all selections
+                            viewModel.clearCloth(ClothType.CAP)
+                            viewModel.clearCloth(ClothType.TOP)
+                            viewModel.clearCloth(ClothType.BOTTOM)
+                            viewModel.clearCloth(ClothType.SHOES)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = greenColor),
+                        shape = RoundedCornerShape(32.dp),
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(56.dp)
+                            .align(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = "Confirm",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-                ClothType.TOP -> {
-                    SelectClothDialog("Select Top", topList, onSelect = {
-                        viewModel.selectCloth(ClothType.TOP, it)
-                        showSelector = null
-                    }, onDismiss = { showSelector = null })
+
+                // Dialog for selecting clothes
+                when (showSelector) {
+                    ClothType.CAP -> {
+                        SelectClothDialog("Select Cap", capList, onSelect = {
+                            viewModel.selectCloth(ClothType.CAP, it)
+                            showSelector = null
+                        }, onDismiss = { showSelector = null })
+                    }
+                    ClothType.TOP -> {
+                        SelectClothDialog("Select Top", topList, onSelect = {
+                            viewModel.selectCloth(ClothType.TOP, it)
+                            showSelector = null
+                        }, onDismiss = { showSelector = null })
+                    }
+                    ClothType.BOTTOM -> {
+                        SelectClothDialog("Select Bottom", bottomList, onSelect = {
+                            viewModel.selectCloth(ClothType.BOTTOM, it)
+                            showSelector = null
+                        }, onDismiss = { showSelector = null })
+                    }
+                    ClothType.SHOES -> {
+                        SelectClothDialog("Select Shoes", shoesList, onSelect = {
+                            viewModel.selectCloth(ClothType.SHOES, it)
+                            showSelector = null
+                        }, onDismiss = { showSelector = null })
+                    }
+                    null -> {}
                 }
-                ClothType.BOTTOM -> {
-                    SelectClothDialog("Select Bottom", bottomList, onSelect = {
-                        viewModel.selectCloth(ClothType.BOTTOM, it)
-                        showSelector = null
-                    }, onDismiss = { showSelector = null })
-                }
-                ClothType.SHOES -> {
-                    SelectClothDialog("Select Shoes", shoesList, onSelect = {
-                        viewModel.selectCloth(ClothType.SHOES, it)
-                        showSelector = null
-                    }, onDismiss = { showSelector = null })
-                }
-                null -> {}
             }
         }
     }

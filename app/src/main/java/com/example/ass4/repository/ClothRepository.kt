@@ -61,5 +61,20 @@ class ClothRepository(application: Application) {
     suspend fun getMostRecentCreatedAt(uid: String): Long? {
         return clothDao.getMostRecentCreatedAt(uid)
     }
+
+    suspend fun getNoShoppingDays(uid: String): Int {
+        val lastAdded = clothDao.getLastClothAddedTime(uid)
+        val now = System.currentTimeMillis()
+        return if (lastAdded != null) {
+            ((now - lastAdded) / (1000 * 60 * 60 * 24)).toInt()
+        } else {
+            0
+        }
+    }
+
+    // 用于 Worker 一次性查询
+    suspend fun getClothesByUserOnce(uid: String): List<Cloth> {
+        return clothDao.getClothesByUserOnce(uid)
+    }
 } 
 
