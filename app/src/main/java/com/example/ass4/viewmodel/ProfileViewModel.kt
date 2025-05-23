@@ -8,6 +8,7 @@ import com.example.ass4.database.WearHistory
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil.util.CoilUtils.result
 import com.example.ass4.database.MonthlyRepeatReusage
 import com.example.ass4.repository.ClothRepository
 import com.example.ass4.repository.WearHistoryRepository
@@ -15,7 +16,9 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -55,6 +58,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _maxRepeatCount = MutableStateFlow(0)
     val maxRepeatCount: StateFlow<Int> = _maxRepeatCount.asStateFlow()
 
+    private val _selectedMonth = MutableStateFlow<String?>(null)
+    val selectedMonth: StateFlow<String?> = _selectedMonth
+
+
     // 🎖 成就系统
     val isEcoWarrior: StateFlow<Boolean> = noShoppingDays.map { it >= 30 }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -64,6 +71,32 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     val isMinimalist: StateFlow<Boolean> = totalClothes.map { it <= 20 }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private val _availableMonths = MutableStateFlow<List<String>>(emptyList())
+    val availableMonths: StateFlow<List<String>> = _availableMonths.asStateFlow()
+
+    fun loadAvailableMonths() {
+        viewModelScope.launch {
+            val rawMonths = wearHistoryRepository.getAllAvailableMonths(_uid.value)
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM")
+            val now = LocalDate.now()
+            val fallback = (0..5).map { now.minusMonths(it.toLong()).format(formatter) }.reversed()
+            _availableMonths.value = if (rawMonths.isNotEmpty()) rawMonths.sorted() else fallback
+        }
+    }
+
+//    fun getDisplayMonthOptions(): List<String> {
+//        val inputFormat = DateTimeFormatter.ofPattern("yyyy-MM")
+//        val outputFormat = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
+//        return _availableMonths.value.map {
+//            YearMonth.parse(it, inputFormat).format(outputFormat)
+//        }
+//    }
+    fun getDisplayMonthOptions(): List<String> {
+        return listOf("2024 Dec","2025 Jan", "2025 Feb", "2025 Mar", "2025 Apr", "2025 May")
+    }
+
+
 
     fun refreshUserInfo() {
         val user = FirebaseAuth.getInstance().currentUser
@@ -85,6 +118,15 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         _selectedEnd.value = end
         loadMonthlyRepeatReusage(start, end)
     }
+
+    fun resetSelectedMonth() {
+        _selectedMonth.value = null
+    }
+
+    fun setSelectedMonth(month: String?) {
+        _selectedMonth.value = month
+    }
+
 
     fun getDefaultChartStartMillis(): Long {
         val now = LocalDate.now()
@@ -154,13 +196,35 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun loadMonthlyRepeatReusage(startMillis: Long = _selectedStart.value, endMillis: Long = _selectedEnd.value) {
+    fun loadMonthlyRepeatReusage(startMillis: Long, endMillis: Long) {
         viewModelScope.launch {
-            val result = wearHistoryRepository.getMonthlyRepeatReusageTrend(_uid.value, startMillis, endMillis)
-            println("📊 Loaded repeat reuse trend: $result")
-            _monthlyRepeatReusage.value = result
+            val raw = wearHistoryRepository.getMonthlyRepeatReusageTrend(uid.value, startMillis, endMillis)
+
+            val startYM = Instant.ofEpochMilli(startMillis).atZone(ZoneId.systemDefault()).toLocalDate().withDayOfMonth(1)
+            val endYM = Instant.ofEpochMilli(endMillis).atZone(ZoneId.systemDefault()).toLocalDate().withDayOfMonth(1)
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM")
+
+            val monthRange = mutableListOf<String>()
+            var cursor = startYM
+            while (!cursor.isAfter(endYM)) {
+                monthRange.add(cursor.format(formatter))
+                cursor = cursor.plusMonths(1)
+            }
+
+            // 仅保留选择范围内的月份数据，并按顺序补 0
+            val filtered = monthRange.map { month ->
+                MonthlyRepeatReusage(
+                    month = month,
+                    repeat_count = raw.find { it.month == month }?.repeat_count ?: 0
+                )
+            }
+
+            _monthlyRepeatReusage.value = filtered
         }
     }
+
+
+
 
 
     fun getFormattedCreatedAt(): String {
@@ -249,10 +313,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             println("✅ Mock wear history inserted: ${wearHistoryList.size} records")
         }
     }
-
-
-
-
 
 
 }

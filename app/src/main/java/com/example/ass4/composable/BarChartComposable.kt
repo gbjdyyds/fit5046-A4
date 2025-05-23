@@ -1,7 +1,6 @@
 package com.example.ass4.components
 
 import android.view.MotionEvent
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,6 +15,9 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 @Composable
 fun BarChartCard(
@@ -44,8 +46,8 @@ fun BarChartCard(
                 xAxis.apply {
                     position = XAxis.XAxisPosition.BOTTOM
                     granularity = 1f
+                    isGranularityEnabled = true
                     setDrawGridLines(false)
-                    labelRotationAngle = -30f
                 }
 
                 setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
@@ -74,14 +76,17 @@ fun BarChartCard(
                 BarEntry(index.toFloat(), item.repeat_count.toFloat())
             }
 
-            val labels = data.map { it.month }
+            val labels = data.map {
+                YearMonth.parse(it.month, DateTimeFormatter.ofPattern("yyyy-MM"))
+                    .format(DateTimeFormatter.ofPattern("MMM yyyy", Locale.ENGLISH))
+            }
 
             val barColors = entries.mapIndexed { index, _ ->
-                if (selectedMonth == null || labels[index] == selectedMonth) {
+                val isSelected = selectedMonth == null || data[index].month == selectedMonth
+                if (isSelected)
                     ColorTemplate.COLORFUL_COLORS[index % ColorTemplate.COLORFUL_COLORS.size]
-                } else {
-                    android.graphics.Color.argb(80, 180, 180, 180) // 半透明灰色
-                }
+                else
+                    android.graphics.Color.argb(80, 180, 180, 180)
             }
 
             val dataSet = BarDataSet(entries, "Monthly Wear Count").apply {
@@ -91,19 +96,17 @@ fun BarChartCard(
                 valueTextColor = android.graphics.Color.BLACK
             }
 
-            val barData = BarData(dataSet).apply {
+            chart.data = BarData(dataSet).apply {
                 barWidth = 0.9f
             }
 
-            chart.data = barData
             chart.xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+            chart.xAxis.labelCount = labels.size
 
-            // 设置高亮
             if (selectedMonth != null) {
-                val index = labels.indexOf(selectedMonth)
-                if (index != -1) {
-                    chart.highlightValue(index.toFloat(), 0)
-                }
+                val index = data.indexOfFirst { it.month == selectedMonth }
+                if (index != -1) chart.highlightValue(index.toFloat(), 0)
+                else chart.highlightValue(null)
             } else {
                 chart.highlightValue(null)
             }

@@ -18,9 +18,9 @@ class WearHistoryRepository(application: Application) {
         uid: String,
         start: Long,
         end: Long,
-        limit: Int = 6
+//        limit: Int = 6
     ): List<MonthlyRepeatReusage> {
-        return wearHistoryDao.getMonthlyRepeatReusageTrend(uid, start, end, limit)
+        return wearHistoryDao.getMonthlyRepeatReusageTrend(uid, start, end)
     }
 
     suspend fun getRepeatWearCountInDays(uid: String, startTime: Long): Int {

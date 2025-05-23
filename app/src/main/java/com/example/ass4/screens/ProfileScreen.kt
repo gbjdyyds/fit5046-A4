@@ -38,9 +38,6 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.*
 import com.example.ass4.components.BarChartCard
-
-
-
 import android.view.MotionEvent
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.components.XAxis
@@ -63,40 +60,26 @@ fun ProfileScreen(navController: NavController) {
     val isEcoWarrior by viewModel.isEcoWarrior.collectAsState()
     val isCollector by viewModel.isCollector.collectAsState()
     val isMinimalist by viewModel.isMinimalist.collectAsState()
+    val selectedMonth by viewModel.selectedMonth.collectAsState()
     val context = LocalContext.current
 
-    val selectedMonth = remember { mutableStateOf<String?>(null) }
-    val filledChartData = viewModel.getLast6MonthsWithZeroFilled(chartData)
-
-    val filteredData = if (selectedMonth.value != null)
-        filledChartData.filter { it.month == selectedMonth.value }
-    else filledChartData
-
-    val greenColor = Color(0xFF2E7D32)
-    val lightGray = Color(0xFFEEEEEE)
-
     LaunchedEffect(Unit) {
+        viewModel.loadAvailableMonths()
         viewModel.refreshUserInfo()
         viewModel.loadProfileData()
         viewModel.initializeTimeRange()
-//        viewModel.insertMockTestData()
-        println("✅ yearMonthOptions = ${viewModel.generateYearMonthOptions(viewModel.createdAt.value)}")
-        viewModel.loadProfileAndChartData()
     }
 
     Scaffold(bottomBar = { BottomNavBar(navController, selected = "profile") }) { padding ->
         LazyColumn(modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .background(lightGray.copy(alpha = 0.3f))) {
+            .background(Color(0xFFEEEEEE).copy(alpha = 0.3f))) {
 
             item { ProfileHeader(name, email, createdAt, navController) }
 
             item {
-                Row(
-                    Modifier.fillMaxWidth().padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
+                Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                     StatCard("$totalClothes", "Items", Color.White)
                     StatCard("$noShoppingDays Days", "No Shopping", Color.White)
                 }
@@ -106,28 +89,27 @@ fun ProfileScreen(navController: NavController) {
 
             item {
                 AchievementRow(Icons.Filled.Nature, "Eco Warrior", "30 Days No Shopping", isEcoWarrior)
-                AchievementRow(Icons.Filled.Star, "Style Master", "Reuse the same cloth more than 50 times", isCollector)
-                AchievementRow(Icons.Filled.CheckCircle, "Minimalist", "10~20 Item Wardrobe", isMinimalist)
+                AchievementRow(Icons.Filled.Star, "Style Master", "Reuse same cloth >50 times", isCollector)
+                AchievementRow(Icons.Filled.CheckCircle, "Minimalist", "10~20 Items", isMinimalist)
             }
 
             item { SectionTitle("Monthly Usage Trend") }
+
             item { DateRangeDropdowns(viewModel) }
 
             item {
                 BarChartCard(
-                    data = filledChartData,
-                    selectedMonth = selectedMonth.value,
-                    onBarSelected = { month ->
-                        selectedMonth.value = month
-                        month?.let {
-                            val count = filledChartData.find { it.month == month }?.repeat_count ?: 0
-                            Toast.makeText(context, "$month: $count wears", Toast.LENGTH_SHORT).show()
+                    data = chartData,
+                    selectedMonth = selectedMonth,
+                    onBarSelected = { selected ->
+                        viewModel.setSelectedMonth(selected)
+                        selected?.let {
+                            val count = chartData.find { it.month == selected }?.repeat_count ?: 0
+                            Toast.makeText(context, "$it: $count wears", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
             }
-
-
 
             item {
                 Spacer(modifier = Modifier.height(32.dp))
@@ -141,6 +123,7 @@ fun ProfileScreen(navController: NavController) {
         }
     }
 }
+
 
 @Composable
 fun ProfileHeader(name: String, email: String, createdAt: String, navController: NavController) {
@@ -214,187 +197,85 @@ fun AchievementRow(icon: ImageVector, title: String, subtitle: String, achieved:
     }
 }
 
-//@Composable
-//fun BarChartCard(data: List<MonthlyRepeatReusage>, onBarSelected: (String?) -> Unit) {
-//    AndroidView(
-//        modifier = Modifier.fillMaxWidth().height(300.dp).padding(16.dp),
-//        factory = { context ->
-//            BarChart(context).apply {
-//                val entries = data.mapIndexed { index, item ->
-//                    BarEntry(index.toFloat(), item.repeat_count.toFloat())
-//                }
-//                val labels = data.map { it.month }
-//
-//                val barDataSet = BarDataSet(entries, "Repeat Count")
-//                barDataSet.colors = ColorTemplate.COLORFUL_COLORS.toList()
-//                barDataSet.valueTextSize = 12f
-//
-//                val barData = BarData(barDataSet)
-//                barData.barWidth = 0.9f
-//                this.data = barData
-//
-//
-//                xAxis.position = XAxis.XAxisPosition.BOTTOM
-//                xAxis.valueFormatter = IndexAxisValueFormatter(labels)
-//                xAxis.granularity = 1f
-//                xAxis.setDrawGridLines(false)
-//                axisRight.isEnabled = false
-//                legend.isEnabled = false
-//                description.isEnabled = false
-//
-//                setFitBars(true)
-//                animateY(1000)
-//
-//                setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
-//                    override fun onValueSelected(e: Entry?, h: com.github.mikephil.charting.highlight.Highlight?) {
-//                        val i = e?.x?.toInt() ?: return
-//                        onBarSelected(labels[i])
-//                    }
-//
-//                    override fun onNothingSelected() {
-//                        onBarSelected(null)
-//                    }
-//                })
-//
-//                setOnTouchListener { _, event ->
-//                    if (event.action == MotionEvent.ACTION_UP) {
-//                        onBarSelected(null)
-//                    }
-//                    false
-//                }
-//            }
-//        }
-//    )
-//}
-
-//@Composable
-//fun ChartCard(data: List<MonthlyRepeatReusage>) {
-//    val green = Color(0xFF2E7D32)
-//    val lightGreen = Color(0xFFF1F8E9)
-//    Card(modifier = Modifier.padding(16.dp).fillMaxWidth().height(200.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-//        Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-//            val width = size.width
-//            val height = size.height
-//            val points = data.map { it.repeat_count.toFloat() }
-//            val labels = data.map { it.month }
-//            val max = (points.maxOrNull() ?: 1f).coerceAtLeast(1f)
-//            val path = Path()
-//            val strokePath = Path()
-//            points.forEachIndexed { i, yVal ->
-//                val x = width * i / (points.size - 1)
-//                val y = height - (yVal / max) * height
-//                if (i == 0) path.moveTo(x, y).also { strokePath.moveTo(x, y) } else path.lineTo(x, y).also { strokePath.lineTo(x, y) }
-//            }
-//            path.lineTo(width, height)
-//            path.lineTo(0f, height)
-//            path.close()
-//            drawPath(path, color = lightGreen)
-//            drawPath(strokePath, color = green, style = Stroke(width = 3f, cap = StrokeCap.Round))
-//            points.forEachIndexed { i, yVal ->
-//                val x = width * i / (points.size - 1)
-//                val y = height - (yVal / max) * height
-//                drawCircle(color = green, radius = 5f, center = Offset(x, y))
-//            }
-//            labels.forEachIndexed { i, label ->
-//                val x = width * i / (labels.size - 1)
-//                drawContext.canvas.nativeCanvas.drawText(label, x, height + 28f, android.graphics.Paint().apply {
-//                    color = android.graphics.Color.DKGRAY
-//                    textSize = 28f
-//                    textAlign = android.graphics.Paint.Align.CENTER
-//                })
-//            }
-//        }
-//    }
-//}
 
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DateRangeDropdowns(viewModel: ProfileViewModel) {
-    val yearMonthOptions = viewModel.generateYearMonthOptions(viewModel.createdAt.value)
+    val options = viewModel.getDisplayMonthOptions()
+    val formatter = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
+
+    var selectedStart by remember { mutableStateOf(options.firstOrNull() ?: "") }
+    var selectedEnd by remember { mutableStateOf(options.lastOrNull() ?: "") }
+
     var expandedStart by remember { mutableStateOf(false) }
     var expandedEnd by remember { mutableStateOf(false) }
-    var selectedStartOption by remember { mutableStateOf(yearMonthOptions.firstOrNull() ?: "") }
-    var selectedEndOption by remember { mutableStateOf(yearMonthOptions.lastOrNull() ?: "") }
-
-    val formatter = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
 
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text("Select Time Range", fontWeight = FontWeight.Medium)
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Start Dropdown
-            Box(modifier = Modifier.weight(1f)) {
+            // Start Date
+            ExposedDropdownMenuBox(
+                expanded = expandedStart,
+                onExpandedChange = { expandedStart = it },
+                modifier = Modifier.weight(1f)
+            ) {
                 OutlinedTextField(
-                    value = selectedStartOption,
+                    value = selectedStart,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Start") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expandedStart = true },
-                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedStart)
+                    },
+                    modifier = Modifier.menuAnchor()
                 )
-                DropdownMenu(expanded = expandedStart, onDismissRequest = { expandedStart = false }) {
-                    yearMonthOptions.forEach { option ->
+                ExposedDropdownMenu(
+                    expanded = expandedStart,
+                    onDismissRequest = { expandedStart = false }
+                ) {
+                    options.forEach { option ->
                         DropdownMenuItem(
                             text = { Text(option) },
                             onClick = {
-                                selectedStartOption = option
+                                selectedStart = option
                                 expandedStart = false
-
-                                val ymStart = YearMonth.parse(option, formatter)
-                                val ymEnd = YearMonth.parse(selectedEndOption, formatter)
-
-                                val (finalStart, finalEnd) = if (ymStart.isAfter(ymEnd)) ymEnd to ymStart else ymStart to ymEnd
-
-                                val startMillis = finalStart.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                                val endMillis = finalEnd.atEndOfMonth().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-                                selectedStartOption = finalStart.format(formatter)
-                                selectedEndOption = finalEnd.format(formatter)
-
-                                viewModel.updateSelectedTimeRange(startMillis, endMillis)
+                                updateTimeRange(selectedStart, selectedEnd, viewModel)
                             }
-
                         )
                     }
                 }
             }
 
-            // End Dropdown
-            Box(modifier = Modifier.weight(1f)) {
+            // End Date
+            ExposedDropdownMenuBox(
+                expanded = expandedEnd,
+                onExpandedChange = { expandedEnd = it },
+                modifier = Modifier.weight(1f)
+            ) {
                 OutlinedTextField(
-                    value = selectedEndOption,
+                    value = selectedEnd,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("End") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expandedEnd = true },
-                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) }
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedEnd)
+                    },
+                    modifier = Modifier.menuAnchor()
                 )
-                DropdownMenu(expanded = expandedEnd, onDismissRequest = { expandedEnd = false }) {
-                    yearMonthOptions.forEach { option ->
+                ExposedDropdownMenu(
+                    expanded = expandedEnd,
+                    onDismissRequest = { expandedEnd = false }
+                ) {
+                    options.forEach { option ->
                         DropdownMenuItem(
                             text = { Text(option) },
                             onClick = {
-                                selectedEndOption = option
+                                selectedEnd = option
                                 expandedEnd = false
-
-                                val ymStart = YearMonth.parse(selectedStartOption, formatter)
-                                val ymEnd = YearMonth.parse(option, formatter)
-
-                                val (finalStart, finalEnd) = if (ymStart.isAfter(ymEnd)) ymEnd to ymStart else ymStart to ymEnd
-
-                                val startMillis = finalStart.atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                                val endMillis = finalEnd.atEndOfMonth().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-
-                                selectedStartOption = finalStart.format(formatter)
-                                selectedEndOption = finalEnd.format(formatter)
-
-                                viewModel.updateSelectedTimeRange(startMillis, endMillis)
+                                updateTimeRange(selectedStart, selectedEnd, viewModel)
                             }
                         )
                     }
@@ -403,3 +284,26 @@ fun DateRangeDropdowns(viewModel: ProfileViewModel) {
         }
     }
 }
+
+private fun updateTimeRange(
+    startStr: String,
+    endStr: String,
+    viewModel: ProfileViewModel
+) {
+    val formatter = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
+    val startYM = YearMonth.parse(startStr, formatter)
+    val endYM = YearMonth.parse(endStr, formatter)
+
+    val (finalStart, finalEnd) = if (startYM.isAfter(endYM)) endYM to startYM else startYM to endYM
+
+    val zoneId = ZoneId.systemDefault()
+    val startMillis = finalStart.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val endMillis = finalEnd.atEndOfMonth().atStartOfDay(zoneId).toInstant().toEpochMilli()
+
+    // ✅ 清除选中柱子（防止旧柱残留高亮）
+    viewModel.resetSelectedMonth()
+
+    // 🔁 更新 ViewModel 时间范围，并触发图表数据更新
+    viewModel.updateSelectedTimeRange(startMillis, endMillis)
+}
+
