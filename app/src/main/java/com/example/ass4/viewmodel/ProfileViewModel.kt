@@ -85,16 +85,16 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-//    fun getDisplayMonthOptions(): List<String> {
-//        val inputFormat = DateTimeFormatter.ofPattern("yyyy-MM")
-//        val outputFormat = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
-//        return _availableMonths.value.map {
-//            YearMonth.parse(it, inputFormat).format(outputFormat)
-//        }
-//    }
     fun getDisplayMonthOptions(): List<String> {
-        return listOf("2024 Dec","2025 Jan", "2025 Feb", "2025 Mar", "2025 Apr", "2025 May")
+        val inputFormat = DateTimeFormatter.ofPattern("yyyy-MM")
+        val outputFormat = DateTimeFormatter.ofPattern("yyyy MMM", Locale.ENGLISH)
+        return _availableMonths.value.map {
+            YearMonth.parse(it, inputFormat).format(outputFormat)
+        }
     }
+//    fun getDisplayMonthOptions(): List<String> {
+//        return listOf("2024 Dec","2025 Jan", "2025 Feb", "2025 Mar", "2025 Apr", "2025 May")
+//    }
 
 
 
@@ -158,20 +158,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     }
 
 
-    fun getLast6MonthsWithZeroFilled(data: List<MonthlyRepeatReusage>): List<MonthlyRepeatReusage> {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM")
-        val now = LocalDate.now()
-        val last6Months = (0..5).map {
-            now.minusMonths(it.toLong()).format(formatter)
-        }.reversed() // 顺序：较早 -> 最近
-
-        val dataMap = data.associateBy { it.month }
-        return last6Months.map { month ->
-            dataMap[month] ?: MonthlyRepeatReusage(month, 0)
-        }
-    }
-
-
     fun loadProfileData() {
         viewModelScope.launch {
             // 获取衣物数量与注册时间
@@ -222,10 +208,6 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             _monthlyRepeatReusage.value = filtered
         }
     }
-
-
-
-
 
     fun getFormattedCreatedAt(): String {
         return SimpleDateFormat("MMM yyyy", Locale.ENGLISH).format(Date(createdAt.value))
