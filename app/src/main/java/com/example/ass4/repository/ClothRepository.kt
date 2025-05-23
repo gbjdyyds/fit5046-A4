@@ -79,5 +79,8 @@ class ClothRepository(application: Application) {
         return clothDao.insertClothReturnId(cloth)
     }
 
+    suspend fun getMostRecentCreatedAt(uid: String): Long? {
+        return clothDao.getMostRecentCreatedAt(uid)
+    }
 } 
 

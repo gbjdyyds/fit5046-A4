@@ -58,5 +58,7 @@ interface ClothDao {
     @Insert
     suspend fun insertClothReturnId(cloth: Cloth): Long
 
+    @Query("SELECT MAX(createdAt) FROM clothes WHERE uid = :uid")
+    suspend fun getMostRecentCreatedAt(uid: String): Long?
 
 }
