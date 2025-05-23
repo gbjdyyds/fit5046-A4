@@ -32,6 +32,8 @@ import java.util.*
 import androidx.navigation.NavController
 import com.example.ass4.navigation.BottomNavBar
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.material.icons.filled.VolunteerActivism
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,20 +171,15 @@ fun ClothCard(
 
                 // donation tag
                 if (isDonationSuggested) {
-                    Surface(
+                    Icon(
+                        imageVector = Icons.Filled.VolunteerActivism,
+                        contentDescription = "Donation Suggested",
+                        tint = redColor,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(8.dp),
-                        color = redColor,
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = "Donate",
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = TextStyle(fontSize = 12.sp)
-                        )
-                    }
+                            .padding(8.dp)
+                            .size(24.dp)
+                    )
                 }
             }
 
