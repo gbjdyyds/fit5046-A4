@@ -16,8 +16,19 @@ interface ClothDao {
 
     @Query("SELECT * FROM clothes WHERE uid = :uid AND type = :type")
     fun getClothesByUserAndType(uid: String, type: String): Flow<List<Cloth>>
-    
-    @Query("SELECT * FROM clothes WHERE uid = :uid AND (lastWornDate < (strftime('%s', 'now') * 1000 - 365 * 24 * 60 * 60 * 1000) OR lastWornDate IS NULL)")
+
+    @Query("""
+            SELECT * 
+            FROM clothes 
+            WHERE uid = :uid 
+              AND (
+                lastWornDate < (strftime('%s', 'now') * 1000 - 365 * 24 * 60 * 60 * 1000)
+                OR (
+                  lastWornDate IS NULL 
+                  AND createdAt < (strftime('%s', 'now') * 1000 - 365 * 24 * 60 * 60 * 1000)
+                )
+              )
+        """)
     fun getClothesNotWornForOneYear(uid: String): Flow<List<Cloth>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

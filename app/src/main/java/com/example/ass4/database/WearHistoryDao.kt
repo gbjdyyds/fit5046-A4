@@ -25,12 +25,14 @@ interface WearHistoryDao {
         HAVING COUNT(*) > 1
     )
     GROUP BY month
-    ORDER BY month
+    ORDER BY month DESC
+    LIMIT :limit
 """)
     suspend fun getMonthlyRepeatReusageTrend(
         uid: String,
         start: Long,
-        end: Long
+        end: Long,
+        limit: Int = 6
     ): List<MonthlyRepeatReusage>
 
 
@@ -66,18 +68,4 @@ interface WearHistoryDao {
         ORDER BY month DESC
     """)
     suspend fun getAllAvailableMonths(uid: String): List<String>
-
-
-    @Query("SELECT * FROM wear_history WHERE uid = :uid")
-    fun getWearHistoryForUser(uid: String): Flow<List<WearHistory>>
-
 }
-
-// data class to enable monthly usage data count for line chart
-data class MonthlyRepeatReusage(
-    val month: String,
-    val repeat_count: Int
-)
-
-
-

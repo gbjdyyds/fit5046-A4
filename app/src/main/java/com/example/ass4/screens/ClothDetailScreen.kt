@@ -31,6 +31,7 @@ import androidx.compose.foundation.border
 import coil.compose.AsyncImage
 import android.widget.Toast
 import androidx.compose.material.icons.filled.VolunteerActivism
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -250,31 +251,31 @@ fun ClothDetailScreen(
 
                         // Uneditable fields
                         Divider()
-                        // Text("Last Worn: ${cloth?.lastWornDate?.let { Date(it).toLocaleString() } ?: "N/A"}")
-                        // Text("Wear Count: ${cloth?.wearCount ?: 0}")
-                        // Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
+                         Text("Last Worn: ${cloth?.lastWornDate?.let { Date(it).toLocaleString() } ?: "N/A"}")
+                         Text("Wear Count: ${cloth?.wearCount ?: 0}")
+                         Text("Created At: ${cloth?.createdAt?.let { Date(it).toLocaleString() } ?: "N/A"}")
                         // Editable for debugging:
-                        InputField(
-                            label = "Last Worn Date (timestamp)",
-                            value = lastWornDate,
-                            onValueChange = { lastWornDate = it },
-                            isError = false,
-                            errorText = ""
-                        )
-                        InputField(
-                            label = "Wear Count",
-                            value = wearCount,
-                            onValueChange = { wearCount = it },
-                            isError = false,
-                            errorText = ""
-                        )
-                        InputField(
-                            label = "Created At (timestamp)",
-                            value = createdAt,
-                            onValueChange = { createdAt = it },
-                            isError = false,
-                            errorText = ""
-                        )
+//                        InputField(
+//                            label = "Last Worn Date (timestamp)",
+//                            value = lastWornDate,
+//                            onValueChange = { lastWornDate = it },
+//                            isError = false,
+//                            errorText = ""
+//                        )
+//                        InputField(
+//                            label = "Wear Count",
+//                            value = wearCount,
+//                            onValueChange = { wearCount = it },
+//                            isError = false,
+//                            errorText = ""
+//                        )
+//                        InputField(
+//                            label = "Created At (timestamp)",
+//                            value = createdAt,
+//                            onValueChange = { createdAt = it },
+//                            isError = false,
+//                            errorText = ""
+//                        )
                     }
                 }
             }

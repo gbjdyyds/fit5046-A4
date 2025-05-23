@@ -34,7 +34,5 @@ class WearHistoryRepository(application: Application) {
     suspend fun getAllAvailableMonths(uid: String): List<String> {
         return wearHistoryDao.getAllAvailableMonths(uid)
     }
-    fun getWearHistoryForUser(uid: String): Flow<List<WearHistory>> {
-        return wearHistoryDao.getWearHistoryForUser(uid)
-    }
+
 }
