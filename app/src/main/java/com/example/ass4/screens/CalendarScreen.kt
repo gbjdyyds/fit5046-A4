@@ -1,19 +1,16 @@
 package com.example.ass4.screens
 
 import android.app.Application
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.example.ass4.R
-import com.example.ass4.database.ClothType
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,89 +24,37 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
-import com.example.ass4.database.Cloth
-import com.example.ass4.database.WearHistory
 import com.example.ass4.navigation.BottomNavBar
-import com.example.ass4.repository.ClothRepository
-import com.example.ass4.repository.WearHistoryRepository
-import com.google.firebase.auth.FirebaseAuth
-import androidx.compose.ui.res.painterResource
-import kotlinx.coroutines.launch
-import java.time.Instant
+import com.example.ass4.viewmodel.CalendarViewModel
+import com.example.ass4.viewmodel.CalendarViewModelFactory
+import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.*
-import com.example.ass4.viewmodel.HomeViewModel
-import com.example.ass4.viewmodel.HomeViewModelFactory
-import androidx.lifecycle.viewmodel.compose.viewModel
-
 
 @Composable
 fun CalendarScreen(navController: NavHostController) {
-
-    val context = LocalContext.current
-    val application = context.applicationContext as Application
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
-    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(application))
-    val clothRepo = remember { ClothRepository(application) }
-    val historyRepo = remember { WearHistoryRepository(application) }
-    val coroutineScope = rememberCoroutineScope()
-
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-
-// 用户衣物与选中项
-    val capList by viewModel.capList.collectAsState()
-    val topList by viewModel.topList.collectAsState()
-    val bottomList by viewModel.bottomList.collectAsState()
-    val shoesList by viewModel.shoesList.collectAsState()
-
-    val selectedCap by viewModel.selectedCap.collectAsState()
-    val selectedTop by viewModel.selectedTop.collectAsState()
-    val selectedBottom by viewModel.selectedBottom.collectAsState()
-    val selectedShoes by viewModel.selectedShoes.collectAsState()
-
-// 日历逻辑
-    val calendar = Calendar.getInstance()
-    val today = calendar.get(Calendar.DAY_OF_MONTH)
-    val currentYear = calendar.get(Calendar.YEAR)
-    val currentMonth = calendar.get(Calendar.MONTH)
-
+    val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+    val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
+    val application = LocalContext.current.applicationContext as Application
+    val viewModel: CalendarViewModel = viewModel(factory = CalendarViewModelFactory(application))
+    val upcomingEvents by viewModel.upcomingEvents.collectAsState()
     var selectedYear by remember { mutableStateOf(currentYear) }
     var selectedMonth by remember { mutableStateOf(currentMonth) }
     val selectedYearMonth = YearMonth.of(selectedYear, selectedMonth + 1)
-    var showSelector by remember { mutableStateOf<ClothType?>(null) }
-    var allClothes by remember { mutableStateOf<List<Cloth>>(emptyList()) }
-    var wearMap by remember { mutableStateOf<Map<LocalDate, List<Cloth>>>(emptyMap()) }
+
     var showDialog by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    var upcomingEvents by remember { mutableStateOf<List<Pair<LocalDate, String>>>(emptyList()) }
-
-
-    LaunchedEffect(true) {
-        clothRepo.getClothesByUser(uid).collect { clothes ->
-            allClothes = clothes
-        }
-    }
-
-    LaunchedEffect(selectedYearMonth) {
-        historyRepo.getWearHistoryForUser(uid).collect { allHistory ->
-            val filtered = allHistory.filter {
-                val localDate = Instant.ofEpochMilli(it.timestamp)
-                    .atZone(ZoneId.systemDefault()).toLocalDate()
-                localDate.month == selectedYearMonth.month && localDate.year == selectedYearMonth.year
-            }
-            wearMap = filtered.groupBy {
-                Instant.ofEpochMilli(it.timestamp)
-                    .atZone(ZoneId.systemDefault()).toLocalDate()
-            }.mapValues { entry ->
-                entry.value.mapNotNull { h -> allClothes.find { it.id == h.clothId } }
-            }
-        }
-    }
-
+    var eventTitle by remember { mutableStateOf("") }
+    var outfitHint by remember { mutableStateOf("") }
+    var viewEventDetails by remember { mutableStateOf(false) }
+    var selectedEventDetails by remember { mutableStateOf<List<String>>(emptyList()) }
+    var eventToDelete by remember { mutableStateOf<Pair<LocalDate, String>?>(null) }
+    var showPastDateWarning by remember { mutableStateOf(false) }
     Scaffold(bottomBar = { BottomNavBar(navController, "calendar") }) { padding ->
         Column(
             modifier = Modifier
@@ -125,7 +70,9 @@ fun CalendarScreen(navController: NavHostController) {
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 DropdownSelector("Year", (currentYear - 10..currentYear + 10).map { it.toString() }, selectedYear.toString()) {
@@ -144,78 +91,175 @@ fun CalendarScreen(navController: NavHostController) {
                 today = today,
                 currentMonth = currentMonth,
                 currentYear = currentYear,
-                wearMap = wearMap,
-                onDayClick = {
-                    selectedDate = it
-                    showDialog = true
+                events = upcomingEvents,
+                onDayClick = { date ->
+                    val todayDate = LocalDate.now()
+                    selectedDate = date
+                    if (date.isBefore(todayDate)) {
+                        showPastDateWarning = true
+                    } else {
+                        val eventForDate = upcomingEvents.filter { it.first == date }
+                        if (eventForDate.isNotEmpty()) {
+                            viewEventDetails = true
+                            selectedEventDetails = eventForDate.map { it.second }
+                        } else {
+                            showDialog = true
+                        }
+                    }
                 },
                 greenColor = greenColor,
-                lightGreenBg = lightGreenBg
+                lightGreenBg = Color(0xFFEEF5EE)
             )
+
+            Text(
+                text = "Upcoming Events",
+                style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = greenColor),
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(upcomingEvents.sortedBy { it.first }) { (date, title) ->
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { eventToDelete = date to title }
+                    ){
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("$date", color = greenColor, fontWeight = FontWeight.Bold)
+                            Text(title, color = Color.DarkGray)
+                        }
+                    }
+                }
+            }
         }
     }
 
     if (showDialog) {
-        var eventTitle by remember { mutableStateOf("") }
-        val selectedCap by viewModel.selectedCap.collectAsState()
-        val selectedTop by viewModel.selectedTop.collectAsState()
-        val selectedBottom by viewModel.selectedBottom.collectAsState()
-        val selectedShoes by viewModel.selectedShoes.collectAsState()
-
         AlertDialog(
+
+            containerColor = Color(0xFFE8F5E9),
+            titleContentColor = Color(0xFF2E7D32),
+            textContentColor = Color.DarkGray,
             onDismissRequest = { showDialog = false },
             confirmButton = {
                 Button(onClick = {
-                    val timestamp = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                    coroutineScope.launch {
-                        listOfNotNull(
-                            selectedCap,
-                            selectedTop,
-                            selectedBottom,
-                            selectedShoes
-                        ).forEach { cloth ->
-                            historyRepo.insertWearHistory(
-                                WearHistory(
-                                    uid = uid,
-                                    clothId = cloth.id,
-                                    timestamp = timestamp,
-                                    eventTitle = eventTitle.takeIf { it.isNotBlank() }
-                                )
-                            )
-                        }
-                        showDialog = false
-                    }
-                }) {
-                    Text("Confirm")
+                    viewModel.addEvent(selectedDate, "$eventTitle - $outfitHint")
+                    eventTitle = ""
+                    outfitHint = ""
+                    showDialog = false
+                },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text("Confirm", color = Color.White)
                 }
             },
-            title = { Text("Add Event") },
+            title = {
+                Text(
+                    text = "Add Event",
+                    style = TextStyle(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32)
+                    ),
+                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+                )
+            },
             text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column {
                     TextField(
                         value = eventTitle,
                         onValueChange = { eventTitle = it },
                         label = { Text("Event Title") },
+
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text("Select Outfit", fontWeight = FontWeight.Medium)
-                    OutfitPagerSelector(
-                        capList to selectedCap,
-                        topList to selectedTop,
-                        bottomList to selectedBottom,
-                        shoesList to selectedShoes,
-                        onCapSelect = { showSelector = ClothType.CAP },
-                        onCapClear = { viewModel.clearCloth(ClothType.CAP) },
-                        onTopSelect = { showSelector = ClothType.TOP },
-                        onTopClear = { viewModel.clearCloth(ClothType.TOP) },
-                        onBottomSelect = { showSelector = ClothType.BOTTOM },
-                        onBottomClear = { viewModel.clearCloth(ClothType.BOTTOM) },
-                        onShoesSelect = { showSelector = ClothType.SHOES },
-                        onShoesClear = { viewModel.clearCloth(ClothType.SHOES) }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = outfitHint,
+                        onValueChange = { outfitHint = it },
+                        label = { Text("Outfit Hint") },
+
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
+        )
+    }
+    if (viewEventDetails) {
+        AlertDialog(
+            onDismissRequest = { viewEventDetails = false },
+            confirmButton = {
+                Button(onClick = { viewEventDetails = false },colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text("Close",color = Color.White)
+                }
+            },
+            title = { Text("Events on ${selectedDate}") },
+            text = {
+                Column {
+                    selectedEventDetails.forEach {
+                        Text("• $it", modifier = Modifier.padding(vertical = 4.dp))
+                    }
+                }
+            }
+        )
+    }
+    if (eventToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { eventToDelete = null },   title = {
+                Text(
+                    text = "Delete Event",
+                    style = TextStyle(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32)
+                    )
+                )
+            },
+            text = {
+                Text("Are you sure you want to delete this event?\n\n${eventToDelete!!.first}: ${eventToDelete!!.second}")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.removeEvent(eventToDelete!!)
+                    eventToDelete = null
+                },colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text("Delete",color = Color.White)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    eventToDelete = null
+                },colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text("Cancel",color = Color.White)
+                }
+            }
+        )
+    }
+    if (showPastDateWarning) {
+        AlertDialog(
+            onDismissRequest = { showPastDateWarning = false },
+            confirmButton = {
+                Button(onClick = { showPastDateWarning = false },colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))) {
+                    Text("OK",color = Color.White)
+                }
+            },title = {
+                Text(
+                    text = "Invalid Date",
+                    style = TextStyle(
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32)
+                    )
+                )
+            },
+            text = { Text("The selected date has already passed. You can only add events for today or future dates.") }
         )
     }
 }
@@ -243,14 +287,10 @@ fun DropdownSelector(label: String, options: List<String>, selected: String, onS
 
 @Composable
 fun DayOfWeekHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-    ) {
-        listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach { day ->
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").forEach {
             Text(
-                text = day,
+                text = it,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
                 style = TextStyle(fontSize = 16.sp, color = Color.Gray)
@@ -265,7 +305,7 @@ fun CalendarGrid(
     today: Int,
     currentMonth: Int,
     currentYear: Int,
-    wearMap: Map<LocalDate, List<Cloth>>,
+    events: List<Pair<LocalDate, String>>,
     onDayClick: (LocalDate) -> Unit,
     greenColor: Color,
     lightGreenBg: Color
@@ -275,7 +315,9 @@ fun CalendarGrid(
     val dayOfWeekOffset = Calendar.getInstance().apply {
         set(yearMonth.year, yearMonth.monthValue - 1, 1)
     }.get(Calendar.DAY_OF_WEEK) - 1
+
     val days = (1..daysInMonth).map { firstDay.withDayOfMonth(it) }
+    val eventDates = events.map { it.first }.toSet()
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
@@ -297,12 +339,13 @@ fun CalendarGrid(
                     .clip(RoundedCornerShape(12.dp))
                     .background(lightGreenBg)
                     .border(
-                        width = if (date.dayOfMonth == today && yearMonth.monthValue - 1 == currentMonth && yearMonth.year == currentYear) 2.dp else 0.dp,
-                        color = if (date.dayOfMonth == today && yearMonth.monthValue - 1 == currentMonth && yearMonth.year == currentYear) greenColor else Color.Transparent,
+                        width = if (date.dayOfMonth == today && date.monthValue - 1 == currentMonth && date.year == currentYear) 2.dp else 0.dp,
+                        color = if (date.dayOfMonth == today && date.monthValue - 1 == currentMonth && date.year == currentYear) greenColor else Color.Transparent,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .clickable { onDayClick(date) },
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = date.dayOfMonth.toString(),
@@ -310,16 +353,10 @@ fun CalendarGrid(
                     fontWeight = FontWeight.Medium,
                     color = greenColor
                 )
-                wearMap[date]?.firstOrNull()?.let {
-                    Image(
-                        painter = rememberAsyncImagePainter(it.imagePath),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
+                if (eventDates.contains(date)) {
+                    Text(text = "*", color = Color.Red, fontSize = 10.sp)
                 }
             }
         }
     }
 }
-
-
