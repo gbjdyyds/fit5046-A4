@@ -62,7 +62,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val selectedMonth: StateFlow<String?> = _selectedMonth
 
 
-    // 🎖 成就系统
+    // achievement system
     val isEcoWarrior: StateFlow<Boolean> = noShoppingDays.map { it >= 30 }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -104,7 +104,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         _email.value = user?.email ?: "No Email"
     }
 
-    // ⏱️ 初始化默认时间范围（近6个月）
+    // Default initialization time range (within the last 6 months)
     fun initializeTimeRange() {
         val start = getDefaultChartStartMillis()
         val end = System.currentTimeMillis()

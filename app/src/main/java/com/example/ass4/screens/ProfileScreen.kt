@@ -47,6 +47,7 @@ import com.github.mikephil.charting.listener.OnChartValueSelectedListener
 import com.github.mikephil.charting.utils.ColorTemplate
 import java.time.ZoneId
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController) {
@@ -57,11 +58,17 @@ fun ProfileScreen(navController: NavController) {
     val totalClothes by viewModel.totalClothes.collectAsState()
     val noShoppingDays by viewModel.noShoppingDays.collectAsState()
     val chartData by viewModel.monthlyRepeatReusage.collectAsState()
+    val selectedMonth by viewModel.selectedMonth.collectAsState()
     val isEcoWarrior by viewModel.isEcoWarrior.collectAsState()
     val isCollector by viewModel.isCollector.collectAsState()
     val isMinimalist by viewModel.isMinimalist.collectAsState()
-    val selectedMonth by viewModel.selectedMonth.collectAsState()
     val context = LocalContext.current
+
+    val greenColor = Color(0xFF2E7D32)
+    val lightGreen = Color(0xFFF1F8E9)
+    val paleRed = Color(0xFFFBE9E7)
+    val redText = Color(0xFFE57373)
+    val lightGray = Color(0xFFEEEEEE)
 
     LaunchedEffect(Unit) {
         viewModel.loadAvailableMonths()
@@ -71,26 +78,64 @@ fun ProfileScreen(navController: NavController) {
     }
 
     Scaffold(bottomBar = { BottomNavBar(navController, selected = "profile") }) { padding ->
-        LazyColumn(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .background(Color(0xFFEEEEEE).copy(alpha = 0.3f))) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(lightGray.copy(alpha = 0.3f))
+        ) {
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = lightGreen),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    shape = RoundedCornerShape(0.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(16.dp))
 
-            item { ProfileHeader(name, email, createdAt, navController) }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text(email, fontSize = 14.sp, color = Color.Gray)
+                            Text("Member since $createdAt", fontSize = 14.sp, color = Color.Gray)
+                        }
+
+                        IconButton(onClick = { navController.navigate("editProfile") }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray)
+                        }
+                    }
+                }
+            }
 
             item {
-                Row(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    StatCard("$totalClothes", "Items", Color.White)
-                    StatCard("$noShoppingDays Days", "No Shopping", Color.White)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatCard("$totalClothes", "Items", lightGreen)
+                    StatCard("$noShoppingDays Days", "No Shopping", lightGreen)
                 }
             }
 
             item { SectionTitle("My Achievements") }
 
             item {
-                AchievementRow(Icons.Filled.Nature, "Eco Warrior", "30 Days No Shopping", isEcoWarrior)
-                AchievementRow(Icons.Filled.Star, "Style Master", "Reuse same cloth >50 times", isCollector)
-                AchievementRow(Icons.Filled.CheckCircle, "Minimalist", "10~20 Items", isMinimalist)
+                Column(Modifier.padding(horizontal = 16.dp)) {
+                    AchievementRow(Icons.Filled.Nature, "Eco Warrior", "30 Days No Shopping", isEcoWarrior)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AchievementRow(Icons.Filled.Star, "Style Master", "Reuse same cloth >50 times", isCollector)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AchievementRow(Icons.Filled.CheckCircle, "Minimalist", "10~20 Items", isMinimalist)
+                }
             }
 
             item { SectionTitle("Monthly Usage Trend") }
@@ -101,67 +146,55 @@ fun ProfileScreen(navController: NavController) {
                 BarChartCard(
                     data = chartData,
                     selectedMonth = selectedMonth,
-                    onBarSelected = { selected ->
-                        viewModel.setSelectedMonth(selected)
-                        selected?.let {
-                            val count = chartData.find { it.month == selected }?.repeat_count ?: 0
-                            Toast.makeText(context, "$it: $count wears", Toast.LENGTH_SHORT).show()
+                    onBarSelected = {
+                        viewModel.setSelectedMonth(it)
+                        it?.let { m ->
+                            val count = chartData.find { it.month == m }?.repeat_count ?: 0
+                            Toast.makeText(context, "$m: $count wears", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
             }
 
             item {
-                Spacer(modifier = Modifier.height(32.dp))
-                SignOutButton(Color.Red) {
-                    FirebaseAuth.getInstance().signOut()
-                    navController.navigate("login") {
-                        popUpTo("profile") { inclusive = true }
+                Spacer(modifier = Modifier.height(24.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            FirebaseAuth.getInstance().signOut()
+                            navController.navigate("login") {
+                                popUpTo("profile") { inclusive = true }
+                            }
+                        },
+                        modifier = Modifier
+                            .width(240.dp)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(25.dp),
+                        border = BorderStroke(1.dp, redText),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = redText)
+                    ) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Sign out", tint = redText)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Sign Out", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             }
-        }
-    }
-}
 
-
-@Composable
-fun ProfileHeader(name: String, email: String, createdAt: String, navController: NavController) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = name, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text(text = email, fontSize = 14.sp, color = Color.Gray)
-                Text(text = "Member since $createdAt", fontSize = 14.sp, color = Color.Gray)
-            }
-            IconButton(onClick = { navController.navigate("editProfile") }) {
-                Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray)
-            }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
     }
 }
 
 @Composable
 fun SectionTitle(title: String) {
-    Text(text = title, modifier = Modifier.padding(16.dp), style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold))
-}
-
-@Composable
-fun SignOutButton(color: Color, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(25.dp),
-        border = BorderStroke(1.dp, color),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = color)
-    ) {
-        Icon(Icons.Default.ExitToApp, contentDescription = "Sign out", tint = color)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Sign Out", fontSize = 16.sp)
-    }
+    Text(
+        text = title,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+    )
 }
 
 @Composable
@@ -169,29 +202,50 @@ fun StatCard(number: String, label: String, backgroundColor: Color) {
     Card(
         modifier = Modifier.width(100.dp).height(70.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.fillMaxSize().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text(text = number, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black))
+        Column(
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = number, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = label, style = TextStyle(fontSize = 12.sp, color = Color.DarkGray))
+            Text(text = label, fontSize = 12.sp, color = Color.DarkGray)
         }
     }
 }
 
 @Composable
 fun AchievementRow(icon: ImageVector, title: String, subtitle: String, achieved: Boolean) {
-    val iconColor = if (achieved) Color(0xFF2E7D32) else Color.Gray
+    val greenColor = Color(0xFF2E7D32)
+    val lightGreen = Color(0xFFF1F8E9)
     val bgColor = if (achieved) Color(0xFFF1F8E9) else Color.LightGray
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp, horizontal = 8.dp), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(8.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(bgColor), contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = title, tint = iconColor, modifier = Modifier.size(24.dp))
+    val tint = if (achieved) greenColor else Color.Gray
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = lightGreen),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(bgColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = title, tint = tint, modifier = Modifier.size(24.dp))
             }
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column {
-                Text(text = title, style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.Black))
-                Text(text = subtitle, style = TextStyle(fontSize = 14.sp, color = Color.Gray))
+                Text(title, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = Color.Black)
+                Text(subtitle, fontSize = 14.sp, color = Color.Gray)
             }
         }
     }
@@ -300,10 +354,10 @@ private fun updateTimeRange(
     val startMillis = finalStart.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
     val endMillis = finalEnd.atEndOfMonth().atStartOfDay(zoneId).toInstant().toEpochMilli()
 
-    // ✅ 清除选中柱子（防止旧柱残留高亮）
+    //  Remove the selected column (to prevent the old column from remaining bright)
     viewModel.resetSelectedMonth()
 
-    // 🔁 更新 ViewModel 时间范围，并触发图表数据更新
+    //  Update the ViewModel time range and trigger the update of chart data
     viewModel.updateSelectedTimeRange(startMillis, endMillis)
 }
 
