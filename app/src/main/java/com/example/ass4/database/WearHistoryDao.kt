@@ -25,14 +25,12 @@ interface WearHistoryDao {
         HAVING COUNT(*) > 1
     )
     GROUP BY month
-    ORDER BY month DESC
-    LIMIT :limit
+    ORDER BY month
 """)
     suspend fun getMonthlyRepeatReusageTrend(
         uid: String,
         start: Long,
-        end: Long,
-        limit: Int = 6
+        end: Long
     ): List<MonthlyRepeatReusage>
 
 

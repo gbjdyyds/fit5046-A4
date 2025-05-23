@@ -1,6 +1,8 @@
 package com.example.ass4.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,6 +13,7 @@ import com.example.ass4.screens.EditProfileScreen
 import com.example.ass4.screens.ForgotPasswordScreen
 import com.example.ass4.screens.HomeScreen
 import com.example.ass4.screens.*
+import com.example.ass4.viewmodel.ProfileViewModel
 
 @Composable
 fun AppNavGraph(navController: NavHostController,
@@ -68,7 +71,14 @@ fun AppNavGraph(navController: NavHostController,
             ProfileScreen(navController)
         }
         composable("editProfile") {
-            EditProfileScreen(navController)
+            val viewModel: ProfileViewModel = viewModel()
+            EditProfileScreen(
+                navController = navController,
+                initialName = viewModel.userName.collectAsState().value,
+                initialEmail = viewModel.email.collectAsState().value,
+                onChangePassword = { navController.navigate("forgotPassword") }
+            )
         }
+
     }
 }
