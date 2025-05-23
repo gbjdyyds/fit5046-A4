@@ -31,7 +31,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.navigation.NavController
 import com.example.ass4.navigation.BottomNavBar
-import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.VolunteerActivism
 
 
@@ -46,19 +45,12 @@ fun WardrobeScreen(
     val greenColor = Color(0xFF2E7D32)
     val lightGreenBg = Color(0xFFF5F5F5)
 
-    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-
-    if (currentUserId == null) {
-        Text("User not logged in", modifier = Modifier.padding(16.dp))
-        return
-    }
-
 
     // Get all clothes owned by the current user
-    val userClothes by viewModel.getCurrentUserClothes(currentUserId).collectAsState(initial = emptyList())
+    val userClothes by viewModel.getCurrentUserClothes().collectAsState(initial = emptyList())
 
     // Get all clothes which need donation reminder
-    val donationReminderClothes by viewModel.getDonationReminderClothes(currentUserId).collectAsState(initial = emptyList())
+    val donationReminderClothes by viewModel.getDonationReminderClothes().collectAsState(initial = emptyList())
 
     // the state fo search field
     var searchQuery by remember { mutableStateOf("") }
@@ -120,18 +112,35 @@ fun WardrobeScreen(
             )
 
             // Display cloth card using lazy column
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(filteredClothes) { cloth ->
-                    ClothCard(
-                        cloth = cloth,
-                        isDonationSuggested = cloth in donationReminderClothes,
-                        onClick = { onNavigateToClothDetail(cloth.id) }
+            if (filteredClothes.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (searchQuery.isEmpty()) "Your wardrobe is empty" else "No items found",
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
                     )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(filteredClothes) { cloth ->
+                        ClothCard(
+                            cloth = cloth,
+                            isDonationSuggested = cloth in donationReminderClothes,
+                            onClick = { onNavigateToClothDetail(cloth.id) }
+                        )
+                    }
                 }
             }
         }

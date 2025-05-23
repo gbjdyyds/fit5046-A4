@@ -4,14 +4,12 @@ import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +26,6 @@ import androidx.navigation.NavController
 import com.example.ass4.database.ClothType
 import com.example.ass4.viewmodel.ClothDetailViewModel
 import com.example.ass4.viewmodel.ClothDetailViewModelFactory
-import java.util.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import coil.compose.AsyncImage

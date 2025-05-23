@@ -1,8 +1,7 @@
 package com.example.ass4.database
 
 import androidx.room.*
-import com.example.ass4.database.WearHistory
-import kotlinx.coroutines.flow.Flow
+
 
 @Dao
 interface WearHistoryDao {
@@ -70,9 +69,3 @@ interface WearHistoryDao {
     """)
     suspend fun getAllAvailableMonths(uid: String): List<String>
 }
-
-// data class to enable monthly usage data count for line chart
-data class MonthlyRepeatReusage(
-    val month: String,
-    val repeat_count: Int
-)
