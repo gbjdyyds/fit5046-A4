@@ -44,4 +44,10 @@ interface ClothDao {
     @Query("SELECT MAX(createdAt) FROM clothes WHERE uid = :uid")
     suspend fun getMostRecentCreatedAt(uid: String): Long?
 
+    @Query("SELECT * FROM clothes WHERE uid = :uid")
+    suspend fun getClothesByUserOnce(uid: String): List<Cloth>
+
+    @Query("SELECT MAX(createdAt) FROM clothes WHERE uid = :uid")
+    suspend fun getLastClothAddedTime(uid: String): Long?
+
 }
