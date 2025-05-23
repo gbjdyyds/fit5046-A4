@@ -90,8 +90,11 @@ dependencies {
 
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.google.accompanist:accompanist-pager:0.28.0")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.28.0")
 
+
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     // Testing
     testImplementation(libs.junit)

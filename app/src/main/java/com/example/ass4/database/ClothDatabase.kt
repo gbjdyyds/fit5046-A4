@@ -7,7 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [Cloth::class, WearHistory::class],
+
+    entities = [Cloth::class, WearHistory::class, EventEntity::class],
     version = 3,
     exportSchema = false
 )
@@ -15,7 +16,7 @@ import androidx.room.TypeConverters
 abstract class ClothDatabase : RoomDatabase() {
     abstract fun clothDao(): ClothDao
     abstract fun wearHistoryDao(): WearHistoryDao
-
+    abstract fun eventEntityDao(): EventDao
     companion object {
         @Volatile private var INSTANCE: ClothDatabase? = null
 
