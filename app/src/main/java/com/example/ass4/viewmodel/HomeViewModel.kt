@@ -66,18 +66,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         loadWardrobe()
     }
 
-    fun fetchWeatherByCity(city: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val result = weatherApi.getCurrentWeatherByCity(city, apiKey)
-                android.util.Log.d("WeatherDebug", "API result for city $city: temp=${result.main.temp}")
-                _weather.value = result
-            } catch (e: Exception) {
-                android.util.Log.e("WeatherDebug", "API error for city $city: ${e.message}")
-                _weather.value = null
-            }
-        }
-    }
 
     fun fetchWeatherByLocation(lat: Double, lon: Double) {
         viewModelScope.launch(Dispatchers.IO) {
