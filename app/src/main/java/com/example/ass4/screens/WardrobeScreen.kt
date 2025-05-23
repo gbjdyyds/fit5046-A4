@@ -31,7 +31,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.navigation.NavController
 import com.example.ass4.navigation.BottomNavBar
-import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.VolunteerActivism
 
 

@@ -1,7 +1,6 @@
 package com.example.ass4.database
 
 import androidx.room.*
-import com.example.ass4.database.Event
 import kotlinx.coroutines.flow.Flow
 
 @Dao

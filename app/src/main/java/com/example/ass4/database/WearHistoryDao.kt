@@ -1,8 +1,7 @@
 package com.example.ass4.database
 
 import androidx.room.*
-import com.example.ass4.database.WearHistory
-import kotlinx.coroutines.flow.Flow
+
 
 @Dao
 interface WearHistoryDao {

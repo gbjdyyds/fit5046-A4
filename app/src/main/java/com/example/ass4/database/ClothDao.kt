@@ -1,8 +1,6 @@
 package com.example.ass4.database
 
 import androidx.room.*
-import com.example.ass4.database.Cloth
-import com.example.ass4.database.ClothType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
