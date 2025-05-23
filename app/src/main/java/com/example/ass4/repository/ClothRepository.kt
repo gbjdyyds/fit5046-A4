@@ -74,5 +74,10 @@ class ClothRepository(application: Application) {
     suspend fun updateLatestWornDate(id: Int, timestamp: Long = System.currentTimeMillis()) {
         clothDao.updateLatestWornDate(id, timestamp)
     }
+
+    suspend fun insertClothReturnId(cloth: Cloth): Long {
+        return clothDao.insertClothReturnId(cloth)
+    }
+
 } 
 
