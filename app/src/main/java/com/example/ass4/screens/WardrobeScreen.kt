@@ -93,7 +93,7 @@ fun WardrobeScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search items...") },
+                placeholder = { Text("Search items...", color = Color.Gray, fontSize = 15.sp) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
@@ -101,9 +101,9 @@ fun WardrobeScreen(
                         tint = Color.Gray
                     )
                 },
+                singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
                     .padding(bottom = 16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = Color.White,
