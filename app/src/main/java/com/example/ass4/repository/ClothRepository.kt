@@ -4,7 +4,6 @@ import android.app.Application
 import com.example.ass4.database.ClothDatabase
 import com.example.ass4.database.Cloth
 import com.example.ass4.database.ClothDao
-import com.example.ass4.database.ClothType
 import kotlinx.coroutines.flow.Flow
 
 class ClothRepository(application: Application) {
@@ -45,26 +44,6 @@ class ClothRepository(application: Application) {
 
     fun getClothesNotWornForOneYear(uid: String): Flow<List<Cloth>> {
         return clothDao.getClothesNotWornForOneYear(uid)
-    }
-
-    suspend fun updateClothName(id: Int, name: String) {
-        clothDao.updateClothName(id, name)
-    }
-    
-    suspend fun updateClothType(id: Int, type: ClothType) {
-        clothDao.updateClothType(id, type)
-    }
-    
-    suspend fun updateClothColor(id: Int, color: String) {
-        clothDao.updateClothColor(id, color)
-    }
-    
-    suspend fun updateClothFabric(id: Int, fabric: String) {
-        clothDao.updateClothFabric(id, fabric)
-    }
-    
-    suspend fun updateClothImage(id: Int, imagePath: String) {
-        clothDao.updateClothImage(id, imagePath)
     }
     
     suspend fun incrementWearCount(id: Int) {
