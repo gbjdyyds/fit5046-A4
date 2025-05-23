@@ -70,9 +70,3 @@ interface WearHistoryDao {
     """)
     suspend fun getAllAvailableMonths(uid: String): List<String>
 }
-
-// data class to enable monthly usage data count for line chart
-data class MonthlyRepeatReusage(
-    val month: String,
-    val repeat_count: Int
-)

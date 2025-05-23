@@ -7,6 +7,8 @@ import com.example.ass4.database.Cloth
 import com.example.ass4.repository.ClothRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 
@@ -19,26 +21,16 @@ class WardrobeViewModel(application: Application) : AndroidViewModel(application
     }
     
     // Get current user's clothes
-    fun getCurrentUserClothes(uid: String): Flow<List<Cloth>> {
-        return repository.getClothesByUser(uid)
-    }
-    
-    fun insertCloth(cloth: Cloth) = viewModelScope.launch(Dispatchers.IO) {
-        currentUserUid?.let { uid ->
-            repository.insertCloth(cloth.copy(uid = uid))
-        }
-    }
-    
-    fun updateCloth(cloth: Cloth) = viewModelScope.launch(Dispatchers.IO) {
-        repository.updateCloth(cloth)
-    }
-    
-    fun deleteCloth(cloth: Cloth) = viewModelScope.launch(Dispatchers.IO) {
-        repository.deleteCloth(cloth)
+    fun getCurrentUserClothes(): Flow<List<Cloth>> {
+        return currentUserUid?.let { uid ->
+            repository.getClothesByUser(uid)
+        } ?: kotlinx.coroutines.flow.flowOf(emptyList())
     }
     
     // Get clothes that haven't been worn for a year and needs donation reminder
-    fun getDonationReminderClothes(uid: String): Flow<List<Cloth>> {
-        return repository.getClothesNotWornForOneYear(uid)
+    fun getDonationReminderClothes(): Flow<List<Cloth>> {
+        return currentUserUid?.let { uid ->
+            repository.getClothesNotWornForOneYear(uid)
+        } ?: kotlinx.coroutines.flow.flowOf(emptyList())
     }
 } 
