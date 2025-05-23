@@ -61,6 +61,11 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
+    
+    // Compose Animation (使用 BOM 方式)
+    implementation("androidx.compose.animation:animation")
+    implementation("androidx.compose.animation:animation-core")
+    implementation("androidx.compose.animation:animation-graphics")
 
     // Room Database
     implementation(libs.androidx.room.runtime)
@@ -96,4 +101,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Work
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 }

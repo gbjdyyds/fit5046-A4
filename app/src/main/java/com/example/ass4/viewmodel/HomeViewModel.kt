@@ -19,15 +19,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val clothRepo = ClothRepository(application)
     private val wearHistoryRepo = WearHistoryRepository(application)
     private val weatherApi = WeatherApiService.create()
-    private val apiKey = "f68cad898ed653358aefda32b2ae868a" // 你的 OpenWeather API Key
+    private val apiKey = "f68cad898ed653358aefda32b2ae868a" //  OpenWeather API Key
 
     var currentUid: String = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-    // 天气
+    // weather
     private val _weather = MutableStateFlow<WeatherResponse?>(null)
     val weather: StateFlow<WeatherResponse?> = _weather
 
-    // 用户名
+    // Username
     private fun getFirebaseUserName(): String {
         val user = FirebaseAuth.getInstance().currentUser
         return user?.displayName ?: user?.email ?: "User"
@@ -35,11 +35,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _userName = MutableStateFlow(getFirebaseUserName())
     val userName: StateFlow<String> = _userName
 
-    // tips 展开
+    // tips expand
     private val _isTipsExpanded = MutableStateFlow(true)
     val isTipsExpanded: StateFlow<Boolean> = _isTipsExpanded
 
-    // 衣柜数据
+    // Wardrobe data
     private val _capList = MutableStateFlow<List<Cloth>>(emptyList())
     private val _topList = MutableStateFlow<List<Cloth>>(emptyList())
     private val _bottomList = MutableStateFlow<List<Cloth>>(emptyList())
@@ -50,7 +50,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val bottomList: StateFlow<List<Cloth>> = _bottomList
     val shoesList: StateFlow<List<Cloth>> = _shoesList
 
-    // 当前选择
+    // current selections
     private val _selectedCap = MutableStateFlow<Cloth?>(null)
     private val _selectedTop = MutableStateFlow<Cloth?>(null)
     private val _selectedBottom = MutableStateFlow<Cloth?>(null)
@@ -125,7 +125,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Confirm 逻辑：保存穿搭历史，更新衣物穿搭次数
+    // Confirm Logic：Save wear history，update wear time
     fun confirmOutfit() {
         val selected = listOfNotNull(
             _selectedCap.value,
@@ -138,7 +138,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             val now = System.currentTimeMillis()
             for (cloth in selected) {
-                // 保存穿搭历史
+                // save wear history
                 wearHistoryRepo.insertWearHistory(
                     WearHistory(
                         clothId = cloth.id,
@@ -146,7 +146,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         timestamp = now
                     )
                 )
-                // 更新衣物穿搭次数和最后穿搭时间
+                // update wearing times and latest wearing time
                 clothRepo.incrementWearCount(cloth.id)
                 clothRepo.updateLatestWornDate(cloth.id, now)
             }

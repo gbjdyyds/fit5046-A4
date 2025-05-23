@@ -23,25 +23,29 @@ import androidx.navigation.NavController
 fun BottomNavBar(navController: NavController, selected: String = "home") {
     val greenColor = Color(0xFF2E7D32)
 
-    BottomAppBar(
-        modifier = Modifier.height(64.dp),
-        containerColor = Color.White
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+    Column {
+        Divider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+        BottomAppBar(
+            modifier = Modifier.height(64.dp),
+            containerColor = Color.White,
+            tonalElevation = 8.dp
         ) {
-            BottomNavItem("Home", Icons.Outlined.Home, selected == "home", greenColor) {
-                navigateSingleTopTo(navController, "home")
-            }
-            BottomNavItem("Wardrobe", Icons.Outlined.Checkroom, selected == "wardrobe", greenColor) {
-                navigateSingleTopTo(navController, "wardrobe")
-            }
-            BottomNavItem("Calendar", Icons.Outlined.CalendarToday, selected == "calendar", greenColor) {
-                navigateSingleTopTo(navController, "calendar")
-            }
-            BottomNavItem("Profile", Icons.Outlined.Person, selected == "profile", greenColor) {
-                navigateSingleTopTo(navController, "profile")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                BottomNavItem("Home", Icons.Outlined.Home, selected == "home", greenColor) {
+                    navigateSingleTopTo(navController, "home")
+                }
+                BottomNavItem("Wardrobe", Icons.Outlined.Checkroom, selected == "wardrobe", greenColor) {
+                    navigateSingleTopTo(navController, "wardrobe")
+                }
+                BottomNavItem("Calendar", Icons.Outlined.CalendarToday, selected == "calendar", greenColor) {
+                    navigateSingleTopTo(navController, "calendar")
+                }
+                BottomNavItem("Profile", Icons.Outlined.Person, selected == "profile", greenColor) {
+                    navigateSingleTopTo(navController, "profile")
+                }
             }
         }
     }
