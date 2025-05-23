@@ -14,21 +14,28 @@ interface WearHistoryDao {
     // Calculate the repeated usage behaviour on monthly basis, while user is able to
     // select the start and end month
     @Query("""
+    SELECT month, SUM(repeat_count) as repeat_count
+    FROM (
         SELECT 
-          strftime('%Y-%m', datetime(timestamp/1000, 'unixepoch')) as month,
-          COUNT(*) - COUNT(DISTINCT clothId) as repeat_count
+            strftime('%Y-%m', datetime(timestamp / 1000, 'unixepoch')) AS month,
+            clothId,
+            COUNT(*) - 1 AS repeat_count
         FROM wear_history
         WHERE uid = :uid AND timestamp BETWEEN :start AND :end
-        GROUP BY month
-        ORDER BY month DESC
-        LIMIT :limit
-    """)
+        GROUP BY month, clothId
+        HAVING COUNT(*) > 1
+    )
+    GROUP BY month
+    ORDER BY month DESC
+    LIMIT :limit
+""")
     suspend fun getMonthlyRepeatReusageTrend(
         uid: String,
         start: Long,
         end: Long,
         limit: Int = 6
     ): List<MonthlyRepeatReusage>
+
 
     // Accept user id and a timestamp, calculate the repeat wearing behavior from
     // the selected time to now

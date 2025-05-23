@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+
     // Firebase Authentication + Google Sign-In
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth")
@@ -83,6 +84,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
 
     // Testing
     testImplementation(libs.junit)

@@ -40,6 +40,11 @@ interface ClothDao {
     @Query("UPDATE clothes SET lastWornDate = :timestamp WHERE id = :id")
     suspend fun updateLatestWornDate(id: Int, timestamp: Long = System.currentTimeMillis())
 
+
+    @Insert
+    suspend fun insertClothReturnId(cloth: Cloth): Long
+
     @Query("SELECT MAX(createdAt) FROM clothes WHERE uid = :uid")
     suspend fun getMostRecentCreatedAt(uid: String): Long?
+
 }
