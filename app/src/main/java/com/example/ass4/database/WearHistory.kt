@@ -9,7 +9,6 @@ import androidx.room.Index
     tableName = "wear_history",
     foreignKeys = [
         ForeignKey(entity = Cloth::class, parentColumns = ["id"], childColumns = ["clothId"]),
-    
     ],
     indices = [Index("clothId"), Index("uid")]
 )

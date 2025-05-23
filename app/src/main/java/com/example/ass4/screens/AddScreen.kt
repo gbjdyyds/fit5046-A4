@@ -32,7 +32,6 @@ import com.example.ass4.database.ClothType
 import com.example.ass4.navigation.BottomNavBar
 import com.example.ass4.viewmodel.AddClothViewModel
 import com.example.ass4.viewmodel.AddClothViewModelFactory
-import com.google.firebase.auth.FirebaseAuth
 import java.io.File
 import java.io.FileOutputStream
 
@@ -52,6 +51,40 @@ fun copyImageToInternalStorage(context: android.content.Context, uri: Uri): Stri
     } catch (e: Exception) {
         e.printStackTrace()
         null
+    }
+}
+
+
+// Reusable input field composable for text input
+@Composable
+fun InputField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String,
+    greenColor: Color = Color(0xFF2E7D32),
+    lightGray: Color = Color(0xFFE0E0E0)
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text("$label", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            isError = isError,
+            placeholder = { Text("Add $label") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White,
+                unfocusedBorderColor = lightGray,
+                focusedBorderColor = greenColor
+            ),
+            shape = RoundedCornerShape(8.dp),
+            singleLine = true
+        )
+        if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
     }
 }
 
@@ -84,6 +117,7 @@ fun AddScreen(navController: NavController) {
     // Error state for each required field
     var nameError by remember { mutableStateOf(false) }
     var typeError by remember { mutableStateOf(false) }
+    var imageError by remember { mutableStateOf(false) }
 
     // Image picker launcher, saves image to internal storage and updates preview
     val imageLauncher = rememberLauncherForActivityResult(
@@ -132,7 +166,7 @@ fun AddScreen(navController: NavController) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(150.dp)
-                                    .border(BorderStroke(1.dp, lightGray), RoundedCornerShape(8.dp))
+                                    .border(BorderStroke(1.dp, if (imageError) Color.Red else lightGray), RoundedCornerShape(8.dp))
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { imageLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
@@ -145,9 +179,12 @@ fun AddScreen(navController: NavController) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Icon(Icons.Default.Add, contentDescription = null, tint = greenColor)
                                         Text("Click to upload", color = darkGray, fontSize = 14.sp)
-                                        Text("PNG, JPG up to 10MB", color = darkGray, fontSize = 12.sp)
+                                        Text("PNG, JPG up to 2MB", color = darkGray, fontSize = 12.sp)
                                     }
                                 }
+                            }
+                            if (imageError) {
+                                Text("Image is required", color = Color.Red, fontSize = 12.sp)
                             }
                         }
 
@@ -234,7 +271,7 @@ fun AddScreen(navController: NavController) {
                                     Text(
                                         """
                                         • CAP: Hat, cap, beanie
-                                        • TOP: T-shirt, hoodie, jacket
+                                        • TOP: T-shirt, hoodie, jacket, dress
                                         • BOTTOM: Pants, jeans, skirt
                                         • SHOES: Sneakers, boots, sandals
                                         """.trimIndent()
@@ -298,7 +335,8 @@ fun AddScreen(navController: NavController) {
                             // Validate all required fields
                             nameError = name.isBlank()
                             typeError = type.isBlank()
-                            val hasError = nameError || typeError
+                            imageError = imagePath == null
+                            val hasError = nameError || typeError || imageError
                             if (hasError) {
                                 Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
                                 return@Button
@@ -343,35 +381,3 @@ fun AddScreen(navController: NavController) {
     }
 }
 
-// Reusable input field composable for text input
-@Composable
-fun InputField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorText: String,
-    greenColor: Color = Color(0xFF2E7D32),
-    lightGray: Color = Color(0xFFE0E0E0)
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text("$label", color = greenColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            isError = isError,
-            placeholder = { Text("Add $label") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White,
-                unfocusedBorderColor = lightGray,
-                focusedBorderColor = greenColor
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true
-        )
-        if (isError) Text(errorText, color = Color.Red, fontSize = 12.sp)
-    }
-}

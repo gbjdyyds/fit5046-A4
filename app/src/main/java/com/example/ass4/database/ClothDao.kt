@@ -1,8 +1,6 @@
 package com.example.ass4.database
 
 import androidx.room.*
-import com.example.ass4.database.Cloth
-import com.example.ass4.database.ClothType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -31,27 +29,23 @@ interface ClothDao {
     @Delete
     suspend fun deleteCloth(cloth: Cloth)
 
-    @Query("DELETE FROM clothes WHERE uid = :uid")
-    suspend fun deleteAllForUser(uid: String)
-
-    @Query("UPDATE clothes SET name = :name WHERE id = :id")
-    suspend fun updateClothName(id: Int, name: String)
-
-    @Query("UPDATE clothes SET type = :type WHERE id = :id")
-    suspend fun updateClothType(id: Int, type: ClothType)
-
-    @Query("UPDATE clothes SET color = :color WHERE id = :id")
-    suspend fun updateClothColor(id: Int, color: String)
-
-    @Query("UPDATE clothes SET fabric = :fabric WHERE id = :id")
-    suspend fun updateClothFabric(id: Int, fabric: String)
-
-    @Query("UPDATE clothes SET imagePath = :imagePath WHERE id = :id")
-    suspend fun updateClothImage(id: Int, imagePath: String)
-
     @Query("UPDATE clothes SET wearCount = wearCount + 1 WHERE id = :id")
     suspend fun incrementWearCount(id: Int)
 
     @Query("UPDATE clothes SET lastWornDate = :timestamp WHERE id = :id")
     suspend fun updateLatestWornDate(id: Int, timestamp: Long = System.currentTimeMillis())
+
+
+    @Insert
+    suspend fun insertClothReturnId(cloth: Cloth): Long
+
+    @Query("SELECT MAX(createdAt) FROM clothes WHERE uid = :uid")
+    suspend fun getMostRecentCreatedAt(uid: String): Long?
+
+    @Query("SELECT * FROM clothes WHERE uid = :uid")
+    suspend fun getClothesByUserOnce(uid: String): List<Cloth>
+
+    @Query("SELECT MAX(createdAt) FROM clothes WHERE uid = :uid")
+    suspend fun getLastClothAddedTime(uid: String): Long?
+
 }

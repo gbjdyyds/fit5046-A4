@@ -29,7 +29,7 @@ fun AppNavGraph(navController: NavHostController,
             RegisterScreen(
                 navController = navController,
                 onBackClick = { navController.popBackStack() },
-                onRegisterSuccess = { navController.navigate("home") }
+                onRegisterSuccess = { navController.navigate("login") }
             )
         }
         composable("forgotPassword") {
@@ -55,8 +55,7 @@ fun AppNavGraph(navController: NavHostController,
             val clothId = backStackEntry.arguments?.getString("clothId")?.toIntOrNull() ?: return@composable
             ClothDetailScreen(
                 navController = navController,
-                clothId = clothId,
-                onNavigateBack = { navController.popBackStack() }
+                clothId = clothId
             )
         }
         composable("calendar") {
