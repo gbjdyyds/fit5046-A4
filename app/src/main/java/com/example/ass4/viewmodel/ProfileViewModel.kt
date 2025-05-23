@@ -65,6 +65,12 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val isMinimalist: StateFlow<Boolean> = totalClothes.map { it <= 20 }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    fun refreshUserInfo() {
+        val user = FirebaseAuth.getInstance().currentUser
+        _userName.value = user?.displayName ?: "No Name"
+        _email.value = user?.email ?: "No Email"
+    }
+
     // ⏱️ 初始化默认时间范围（近6个月）
     fun initializeTimeRange() {
         val start = getDefaultChartStartMillis()

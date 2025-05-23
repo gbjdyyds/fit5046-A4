@@ -76,6 +76,9 @@ fun ProfileScreen(navController: NavController) {
     val lightGray = Color(0xFFEEEEEE)
 
     LaunchedEffect(Unit) {
+        viewModel.refreshUserInfo()
+        viewModel.loadProfileData()
+        viewModel.initializeTimeRange()
 //        viewModel.insertMockTestData()
         println("✅ yearMonthOptions = ${viewModel.generateYearMonthOptions(viewModel.createdAt.value)}")
         viewModel.loadProfileAndChartData()

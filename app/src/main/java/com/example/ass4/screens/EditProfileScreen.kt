@@ -5,19 +5,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.ass4.viewmodel.ProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 
@@ -28,11 +26,12 @@ fun EditProfileScreen(
     initialName: String = "",
     initialEmail: String = ""
 ) {
-    var name by remember { mutableStateOf(initialName) }
-    var email by remember { mutableStateOf(initialEmail) }
-
+    val viewModel: ProfileViewModel = viewModel()
     val context = LocalContext.current
     val greenColor = Color(0xFF2E7D32)
+
+    var name by remember { mutableStateOf(initialName) }
+    var email by remember { mutableStateOf(initialEmail) }
 
     Scaffold(
         topBar = {
@@ -60,13 +59,13 @@ fun EditProfileScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth()
-            )
+//            OutlinedTextField(
+//                value = email,
+//                onValueChange = { email = it },
+//                label = { Text("Email") },
+//                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+//                modifier = Modifier.fillMaxWidth()
+//            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -74,7 +73,9 @@ fun EditProfileScreen(
             ) {
                 OutlinedButton(
                     onClick = { navController.popBackStack() },
-                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = greenColor)
                 ) {
                     Text("Cancel")
@@ -85,17 +86,15 @@ fun EditProfileScreen(
                     onClick = {
                         val user = FirebaseAuth.getInstance().currentUser
                         if (user != null) {
-                            // 更新邮箱
                             user.updateEmail(email).addOnCompleteListener { emailTask ->
                                 if (emailTask.isSuccessful) {
-                                    // 更新名字
                                     val profileUpdates = UserProfileChangeRequest.Builder()
                                         .setDisplayName(name)
                                         .build()
-
                                     user.updateProfile(profileUpdates).addOnCompleteListener { nameTask ->
                                         if (nameTask.isSuccessful) {
-                                            Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
+                                            viewModel.refreshUserInfo()
+                                            Toast.makeText(context, "Profile updated", Toast.LENGTH_SHORT).show()
                                             navController.popBackStack()
                                         } else {
                                             Toast.makeText(context, "Failed to update name", Toast.LENGTH_SHORT).show()
