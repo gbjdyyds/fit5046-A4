@@ -29,7 +29,7 @@ fun AppNavGraph(navController: NavHostController,
             RegisterScreen(
                 navController = navController,
                 onBackClick = { navController.popBackStack() },
-                onRegisterSuccess = { navController.navigate("home") }
+                onRegisterSuccess = { navController.navigate("login") }
             )
         }
         composable("forgotPassword") {
