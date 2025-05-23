@@ -67,6 +67,7 @@ fun HomeScreen(navController: NavController) {
 
     var showSelector by remember { mutableStateOf<ClothType?>(null) }
     var showBanner by remember { mutableStateOf(false) }
+    var hasShownBanner by remember { mutableStateOf(false) }
 
     val greenColor = Color(0xFF2E7D32)
     val yellowColor = Color(0xFFFFF59D)
@@ -98,9 +99,13 @@ fun HomeScreen(navController: NavController) {
 
     // First time request permission
     LaunchedEffect(Unit) {
-        // Force show Banner for instructor testing
         val prefs = context.getSharedPreferences("reminder", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("show_achievement_reminder", true).apply()
+        val justLoggedIn = prefs.getBoolean("just_logged_in", false)
+        if (justLoggedIn && !hasShownBanner) {
+            showBanner = true
+            hasShownBanner = true
+            prefs.edit().putBoolean("just_logged_in", false).apply()
+        }
         permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
@@ -137,7 +142,7 @@ fun HomeScreen(navController: NavController) {
                 .zIndex(1f)  // Ensure Banner is on top
         ) {
             LaunchedEffect(Unit) {
-                delay(8000) // Auto dismiss after 8 seconds
+                delay(6000) // Auto dismiss after 6 seconds
                 showBanner = false
             }
             Card(
