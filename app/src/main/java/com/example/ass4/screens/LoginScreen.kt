@@ -40,14 +40,19 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
     val loginState by loginViewModel.loginState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // 响应登录状态变化
     LaunchedEffect(loginState) {
         when (val result = loginState) {
-            is LoginViewModel.LoginResult.Success -> onLoginSuccess()
+            is LoginViewModel.LoginResult.Success -> {
+                // Set just_logged_in flag for achievement banner
+                val prefs = context.getSharedPreferences("reminder", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("just_logged_in", true).apply()
+                onLoginSuccess()
+            }
             is LoginViewModel.LoginResult.Failure -> snackbarHostState.showSnackbar(result.message)
             null -> {}
         }
