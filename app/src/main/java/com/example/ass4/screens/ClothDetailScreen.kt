@@ -33,6 +33,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import coil.compose.AsyncImage
 import android.widget.Toast
+import androidx.compose.material.icons.filled.VolunteerActivism
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -144,7 +145,7 @@ fun ClothDetailScreen(
                                         .size(32.dp)
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Favorite,
+                                        imageVector = Icons.Filled.VolunteerActivism,
                                         contentDescription = "Donation Suggestion",
                                         tint = Color.Red
                                     )
