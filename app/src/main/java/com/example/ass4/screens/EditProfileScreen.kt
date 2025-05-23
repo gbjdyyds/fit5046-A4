@@ -24,7 +24,8 @@ import com.google.firebase.auth.UserProfileChangeRequest
 fun EditProfileScreen(
     navController: NavController,
     initialName: String = "",
-    initialEmail: String = ""
+    initialEmail: String = "",
+    onChangePassword: () -> Unit
 ) {
     val viewModel: ProfileViewModel = viewModel()
     val context = LocalContext.current
@@ -113,7 +114,7 @@ fun EditProfileScreen(
             }
 
             TextButton(
-                onClick = { navController.navigate("changePassword") },
+                onClick = onChangePassword,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text("Change Password", color = greenColor)

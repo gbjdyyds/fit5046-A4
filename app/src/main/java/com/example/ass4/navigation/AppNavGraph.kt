@@ -75,7 +75,8 @@ fun AppNavGraph(navController: NavHostController,
             EditProfileScreen(
                 navController = navController,
                 initialName = viewModel.userName.collectAsState().value,
-                initialEmail = viewModel.email.collectAsState().value
+                initialEmail = viewModel.email.collectAsState().value,
+                onChangePassword = { navController.navigate("forgotPassword") }
             )
         }
 
