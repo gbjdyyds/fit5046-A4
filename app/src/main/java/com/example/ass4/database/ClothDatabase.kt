@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
 @Database(
-    entities = [Cloth::class, WearHistory::class],
+    entities = [Cloth::class, WearHistory::class, Event::class],
     version = 3,
     exportSchema = false
 )
