@@ -31,9 +31,6 @@ interface ClothDao {
     @Delete
     suspend fun deleteCloth(cloth: Cloth)
 
-    @Query("DELETE FROM clothes WHERE uid = :uid")
-    suspend fun deleteAllForUser(uid: String)
-
     @Query("UPDATE clothes SET wearCount = wearCount + 1 WHERE id = :id")
     suspend fun incrementWearCount(id: Int)
 

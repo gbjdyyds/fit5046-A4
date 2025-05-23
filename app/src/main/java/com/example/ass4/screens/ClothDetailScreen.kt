@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,6 +67,10 @@ fun ClothDetailScreen(
     // State for error handling
     var nameError by remember { mutableStateOf(false) }
     var typeError by remember { mutableStateOf(false) }
+    var imageError by remember { mutableStateOf(false) }
+
+    // Show info dialog for type
+    var showTypeInfoDialog by remember { mutableStateOf(false) }
 
     // Image picker launcher, saves image to internal storage and updates preview
     val imageLauncher = rememberLauncherForActivityResult(
@@ -121,7 +126,7 @@ fun ClothDetailScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(150.dp)
-                                .border(BorderStroke(1.dp, Color(0xFFE0E0E0)), RoundedCornerShape(8.dp))
+                                .border(BorderStroke(1.dp, if (imageError) Color.Red else Color(0xFFE0E0E0)), RoundedCornerShape(8.dp))
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable { imageLauncher.launch("image/*") },
                             contentAlignment = Alignment.TopEnd
@@ -146,6 +151,9 @@ fun ClothDetailScreen(
                                 }
                             }
                         }
+                        if (imageError) {
+                            Text("Image is required", color = Color.Red, fontSize = 12.sp)
+                        }
 
                         // Editable fields
                         // Name input field
@@ -162,7 +170,18 @@ fun ClothDetailScreen(
 
                         // Type dropdown
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            Text("Type *", color = Color(0xFF2E7D32), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Type *", color = Color(0xFF2E7D32), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Spacer(Modifier.width(4.dp))
+                                IconButton(onClick = { showTypeInfoDialog = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Type Info",
+                                        tint = Color(0xFF2E7D32),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                             Spacer(Modifier.height(8.dp))
                             ExposedDropdownMenuBox(
                                 expanded = typeExpanded,
@@ -204,6 +223,28 @@ fun ClothDetailScreen(
                                 }
                             }
                             if (typeError) Text("Type is required", color = Color.Red, fontSize = 12.sp)
+                        }
+                        // Show info dialog for type
+                        if (showTypeInfoDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showTypeInfoDialog = false },
+                                confirmButton = {
+                                    TextButton(onClick = { showTypeInfoDialog = false }) {
+                                        Text("Got it")
+                                    }
+                                },
+                                title = { Text("Clothing Type Guide") },
+                                text = {
+                                    Text(
+                                        """
+                                        • CAP: Hat, cap, beanie
+                                        • TOP: T-shirt, hoodie, jacket, dress
+                                        • BOTTOM: Pants, jeans, skirt
+                                        • SHOES: Sneakers, boots, sandals
+                                        """.trimIndent()
+                                    )
+                                }
+                            )
                         }
 
                         InputField("Color", color, { color = it }, false, "")
@@ -257,10 +298,12 @@ fun ClothDetailScreen(
                         Text("Back", fontSize = 16.sp)
                     }
                     Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                         onClick = {
                             nameError = name.isBlank()
                             typeError = type.isBlank()
-                            val hasError = nameError || typeError
+                            imageError = imagePath == null
+                            val hasError = nameError || typeError || imageError
                             if (hasError) {
                                 Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
                                 return@Button

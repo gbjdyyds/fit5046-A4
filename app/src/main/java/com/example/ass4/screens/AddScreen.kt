@@ -83,6 +83,7 @@ fun AddScreen(navController: NavController) {
     // Error state for each required field
     var nameError by remember { mutableStateOf(false) }
     var typeError by remember { mutableStateOf(false) }
+    var imageError by remember { mutableStateOf(false) }
 
     // Image picker launcher, saves image to internal storage and updates preview
     val imageLauncher = rememberLauncherForActivityResult(
@@ -131,7 +132,7 @@ fun AddScreen(navController: NavController) {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(150.dp)
-                                    .border(BorderStroke(1.dp, lightGray), RoundedCornerShape(8.dp))
+                                    .border(BorderStroke(1.dp, if (imageError) Color.Red else lightGray), RoundedCornerShape(8.dp))
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { imageLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
@@ -147,6 +148,9 @@ fun AddScreen(navController: NavController) {
                                         Text("PNG, JPG up to 10MB", color = darkGray, fontSize = 12.sp)
                                     }
                                 }
+                            }
+                            if (imageError) {
+                                Text("Image is required", color = Color.Red, fontSize = 12.sp)
                             }
                         }
 
@@ -233,7 +237,7 @@ fun AddScreen(navController: NavController) {
                                     Text(
                                         """
                                         • CAP: Hat, cap, beanie
-                                        • TOP: T-shirt, hoodie, jacket
+                                        • TOP: T-shirt, hoodie, jacket, dress
                                         • BOTTOM: Pants, jeans, skirt
                                         • SHOES: Sneakers, boots, sandals
                                         """.trimIndent()
@@ -297,7 +301,8 @@ fun AddScreen(navController: NavController) {
                             // Validate all required fields
                             nameError = name.isBlank()
                             typeError = type.isBlank()
-                            val hasError = nameError || typeError
+                            imageError = imagePath == null
+                            val hasError = nameError || typeError || imageError
                             if (hasError) {
                                 Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
                                 return@Button

@@ -6,11 +6,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WearHistoryDao {
-    
+
     // add new wearing history into table
     @Insert
     suspend fun insertWearHistory(wearHistory: WearHistory)
-    
+
     // Calculate the repeated usage behaviour on monthly basis, while user is able to
     // select the start and end month
     @Query("""
@@ -53,7 +53,7 @@ interface WearHistoryDao {
         )
     """)
     suspend fun getMaxRepeatWearCount(uid: String): Int?
-    
+
     // Get all available months from wear history for a specific user
     @Query("""
         SELECT DISTINCT strftime('%Y-%m', datetime(timestamp/1000, 'unixepoch')) as month
